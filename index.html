@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>久违</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
     <style>
         /* 重置默认样式 */
         * {
@@ -11,40 +12,48 @@
             box-sizing: border-box;
         }
 
-        /* 全屏图片背景 */
-        body {
-            background: url('https://imgur.com/a/qaOTrIr) no-repeat center center fixed;
-            background-size: cover;
-            min-height: 100vh;
-            position: relative;
-        }
-
-        /* 暗色遮罩层 */
-        .overlay {
-            position: absolute;
+        /* 背景层 */
+        .background {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6); /* 透明度调整：0-1 */
-            z-index: 1;
+            background: url('https://i.imgur.com/ZQNRcGg.jpeg') no-repeat center center/cover;
+            z-index: 0;
         }
 
-        /* 粒子容器 */
+        /* 粒子层 */
         #particles-js {
             position: fixed;
             width: 100%;
             height: 100%;
-            z-index: 2; /* 在遮罩层上方 */
+            z-index: 1;
+        }
+
+        /* 渐变遮罩 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(0,0,0,0.7), rgba(0,0,0,0.4));
+            z-index: 2;
         }
 
         /* 内容容器 */
         .content {
             position: relative;
-            z-index: 3; /* 最顶层 */
+            z-index: 3;
             color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
             text-align: center;
-            padding-top: 20vh;
         }
 
         /* 文字样式 */
@@ -53,27 +62,49 @@
             margin-bottom: 1rem;
             font-family: 'Arial Black', sans-serif;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+            animation: fadeInUp 1s ease;
         }
 
         .cyber-text {
-            font-size: 1.5em;
-            letter-spacing: 2px;
+            font-size: 1.8em;
+            letter-spacing: 3px;
             color: #00ff88;
             text-transform: uppercase;
+            animation: fadeIn 2s ease;
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 <body>
-    <!-- 粒子层 -->
+    <!-- 背景图片 -->
+    <div class="background"></div>
+    
+    <!-- 粒子效果 -->
     <div id="particles-js"></div>
     
-    <!-- 遮罩层 -->
+    <!-- 渐变遮罩 -->
     <div class="overlay"></div>
 
     <!-- 内容区 -->
     <div class="content">
-        <h1>泥嚎！我是Hernepus！</h1>
-        <p class="cyber-text">建设中...了解更多请加同名微信号。</p>
+        <h1>泥嚎！我是Hernepus</h1>
+        <p class="cyber-text">想了解更多，请务必添加同名微信！</p>
     </div>
 
     <!-- 粒子库 -->
@@ -81,14 +112,14 @@
     <script>
         particlesJS('particles-js', {
             particles: {
-                number: { value: 150 }, // 粒子数量
-                color: { value: '#00ff88' }, // 粒子颜色
-                shape: { type: 'circle' }, // 粒子形状
-                opacity: { value: 0.7 }, // 透明度
-                size: { value: 3 }, // 大小
+                number: { value: 200 },
+                color: { value: '#ffffff' }, // 白色粒子
+                shape: { type: 'circle' },
+                opacity: { value: 0.5 },     // 50%透明度
+                size: { value: 3 },
                 move: {
                     enable: true,
-                    speed: 3.0, // 移动速度
+                    speed: 2.5,
                     direction: 'none',
                     random: true,
                     straight: false,
@@ -99,7 +130,13 @@
                 events: {
                     onhover: {
                         enable: true,
-                        mode: 'repulse' // 悬停排斥效果
+                        mode: 'bubble' // 气泡互动效果
+                    }
+                },
+                modes: {
+                    bubble: {
+                        size: 6,
+                        distance: 150
                     }
                 }
             }
