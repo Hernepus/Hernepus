@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>久违</title>
     <link rel="stylesheet" href="/main.css">
+    <!-- 预加载雨滴素材 -->
+    <link rel="preload" href="https://www.freeiconspng.com/uploads/rain-drop-png-clip-art-9.png" as="image">
 </head>
 <body>
     <!-- 导航栏 -->
@@ -16,10 +18,10 @@
         </ul>
     </nav>
 
-    <!-- 雨滴状粒子 -->
+    <!-- 雨滴粒子容器 -->
     <div id="particles-js"></div>
     
-    <!-- 白色遮罩 -->
+    <!-- 遮罩层 -->
     <div class="overlay"></div>
 
     <!-- 内容区 -->
@@ -35,42 +37,72 @@
 
     <!-- 粒子库 -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    
+    <!-- 雨滴粒子系统 -->
     <script>
     particlesJS('particles-js', {
         particles: {
-            number: { value: 80 }, // 减少数量提升性能
+            number: { 
+                value: 80,
+                density: {
+                    enable: true,
+                    value_area: 800
+                }
+            },
             color: { value: '#ffffff' },
             shape: {
                 type: 'image',
                 image: {
-                    src: 'https://www.freeiconspng.com/uploads/rain-drop-png-clip-art-9.png', // 新雨滴素材
+                    src: 'https://www.freeiconspng.com/uploads/rain-drop-png-clip-art-9.png',
                     width: 15,
-                    height: 25
+                    height: 25,
+                    replace_color: 'transparent'
                 }
             },
-            opacity: { value: 0.6 },
-            size: { value: 12 },
+            opacity: {
+                value: 0.6,
+                random: false,
+                anim: {
+                    enable: false
+                }
+            },
+            size: {
+                value: 12,
+                random: true,
+                anim: {
+                    enable: false
+                }
+            },
             move: {
                 enable: true,
-                speed: 15, // 加快下落速度
+                speed: 15,
                 direction: 'bottom',
                 straight: true,
                 out_mode: 'out',
-                bounce: false
+                bounce: false,
+                attract: {
+                    enable: false
+                }
             }
         },
         interactivity: {
             detect_on: 'canvas',
             events: {
-                onhover: { enable: false },
-                onclick: { 
-                    enable: true, // 点击生成新雨滴
-                    mode: 'push'
+                onhover: {
+                    enable: false
+                },
+                onclick: {
+                    enable: true,
+                    mode: 'push',
+                    particles_nb: 3
                 }
             }
         },
-        retina_detect: true
-        });
+        retina_detect: true,
+        config_demo: {
+            hide_card: true
+        }
+    });
     </script>
 </body>
 </html>
