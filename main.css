@@ -1,4 +1,4 @@
-* main.css */
+/* main.css - 最终修正版 */
 /* 重置默认样式 */
 * {
     margin: 0;
@@ -7,12 +7,18 @@
     font-family: 'Segoe UI', '黑体', SimHei, sans-serif;
 }
 
+/* 移动端优先设计 */
+html {
+    font-size: 16px;
+}
+
 /* 全屏图片背景 */
 body {
     background: url('https://s21.ax1x.com/2025/03/22/pE04D6s.jpg') no-repeat center center fixed;
     background-size: cover;
     min-height: 100vh;
     position: relative;
+    touch-action: manipulation;
 }
 
 /* 白色遮罩层 */
@@ -32,27 +38,31 @@ body {
     top: 0;
     width: 100%;
     background: rgba(255, 255, 255, 0.95);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 1000;
-    padding: 1rem 2rem;
+    padding: 1rem;
 }
 
 .nav-menu {
     max-width: 1200px;
     margin: 0 auto;
     display: flex;
-    gap: 2.5rem;
+    gap: 1rem;
     list-style: none;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .nav-item {
     color: #333;
     text-decoration: none;
-    font-size: 1.1em;
+    font-size: 1rem;
     position: relative;
     transition: color 0.3s;
     font-weight: bold;
+    flex-shrink: 0;
 }
 
 .nav-item::after {
@@ -76,7 +86,7 @@ body {
     z-index: 3;
     color: #fff;
     text-align: center;
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -85,29 +95,31 @@ body {
 }
 
 h1 {
-    font-size: 5em;
-    margin-bottom: 1.5rem;
+    font-size: 3em;
+    margin-bottom: 1rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    line-height: 1.2;
 }
 
 .cyber-text {
-    font-size: 1.8em;
+    font-size: 1.2em;
     letter-spacing: 2px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* 底部版权 */
+/* 底部版权 (完整保留) */
 .footer {
     position: fixed;
     bottom: 0;
     width: 100%;
-    padding: 1.5rem;
+    padding: 1rem;
     text-align: center;
     color: white;
     background: rgba(0, 0, 0, 0.7);
+    -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
     z-index: 1001;
-    font-size: 0.9em;
+    font-size: 0.8em;
     cursor: pointer;
 }
 
@@ -117,4 +129,44 @@ h1 {
     width: 100%;
     height: 100%;
     z-index: 2;
+}
+
+/* ========== 媒体查询 ========== */
+@media (min-width: 768px) {
+    html {
+        font-size: 18px;
+    }
+    
+    .nav-container {
+        padding: 1rem 2rem;
+    }
+    
+    .nav-menu {
+        gap: 2.5rem;
+        flex-wrap: nowrap;
+    }
+    
+    .nav-item {
+        font-size: 1.1em;
+    }
+    
+    h1 {
+        font-size: 5em;
+        margin-bottom: 1.5rem;
+    }
+    
+    .cyber-text {
+        font-size: 1.8em;
+    }
+    
+    .footer {
+        padding: 1.5rem;
+        font-size: 0.9em;
+    }
+}
+
+@media (-webkit-min-device-pixel-ratio: 2) {
+    .nav-container {
+        border-bottom-width: 0.5px;
+    }
 }
