@@ -1,15 +1,28 @@
 {
   "routes": [
+    // 优先处理静态资源
     {
-      "src": "/interloper-arg/(.*)",
+      "src": "/(.*\\.(css|js|png|jpg|svg))",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "continue": true
+    },
+    // 精确匹配子页面
+    {
+      "src": "/interloper-arg",
       "dest": "/interloper-arg/index.html",
       "headers": {
-        "Cache-Control": "no-cache"
+        "Cache-Control": "public, max-age=0, must-revalidate"
       }
     },
+    // 兜底路由（最后处理）
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "headers": {
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      }
     }
   ]
 }
