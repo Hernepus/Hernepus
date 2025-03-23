@@ -36,12 +36,40 @@
     <!-- 粒子库 -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script>
-        particlesJS('particles-js', {
-            /* 保持原有粒子配置不变 */
-        });
-
-        document.querySelector('.footer').addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+    particlesJS('particles-js', {
+        particles: {
+            number: { value: 80 }, // 减少数量提升性能
+            color: { value: '#ffffff' },
+            shape: {
+                type: 'image',
+                image: {
+                    src: 'https://www.freeiconspng.com/uploads/rain-drop-png-clip-art-9.png', // 新雨滴素材
+                    width: 15,
+                    height: 25
+                }
+            },
+            opacity: { value: 0.6 },
+            size: { value: 12 },
+            move: {
+                enable: true,
+                speed: 15, // 加快下落速度
+                direction: 'bottom',
+                straight: true,
+                out_mode: 'out',
+                bounce: false
+            }
+        },
+        interactivity: {
+            detect_on: 'canvas',
+            events: {
+                onhover: { enable: false },
+                onclick: { 
+                    enable: true, // 点击生成新雨滴
+                    mode: 'push'
+                }
+            }
+        },
+        retina_detect: true
         });
     </script>
 </body>
