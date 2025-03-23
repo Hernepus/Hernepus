@@ -1,18 +1,15 @@
 {
   "routes": [
     {
-      "src": "/interloper-arg",
-      "dest": "/interloper-arg/index.html",
+      "src": "/main.css",
+      "dest": "/main.css",
       "headers": {
-        "Cache-Control": "public, max-age=3600"
+        "Cache-Control": "public, max-age=31536000"
       }
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html",
-      "headers": {
-        "Cache-Control": "public, max-age=3600"
-      }
+      "dest": "/index.html"
     }
   ]
 }
