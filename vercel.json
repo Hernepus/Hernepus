@@ -1,6 +1,5 @@
 {
   "routes": [
-    // 优先处理静态资源
     {
       "src": "/(.*\\.(css|js|png|jpg|svg))",
       "headers": {
@@ -8,7 +7,6 @@
       },
       "continue": true
     },
-    // 精确匹配子页面
     {
       "src": "/interloper-arg",
       "dest": "/interloper-arg/index.html",
@@ -16,7 +14,6 @@
         "Cache-Control": "public, max-age=0, must-revalidate"
       }
     },
-    // 兜底路由（最后处理）
     {
       "src": "/(.*)",
       "dest": "/index.html",
