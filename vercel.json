@@ -16,7 +16,7 @@
     },
     {
       "src": "/oc(.*)",
-      "dest": "/index.html",
+      "dest": "/oc/index.html",
       "headers": {
         "Cache-Control": "public, max-age=0, must-revalidate"
       }
