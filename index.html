@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<audio id="backgroundMusic" src="https://library.hernepus.com/change.flac" autoplay></audio>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>该页面未开放</title>
@@ -89,15 +90,6 @@
     <a href="#">OC</a>
     <a href="#">ABOUT ME</a>
   </nav>
-
-  <div class="container">
-    <div id="output" class="typewriter"></div>
-  </div>
-    <div class="visualizer-container">
-    <canvas id="audioCanvas"></canvas>
-    <div class="visualizer-status">点击此处开始</div>
-</div>
-
   <script>
     const text = `"Successfully Connected. Welcome Back."
   
@@ -113,7 +105,5 @@
       output.appendChild(span);
     });
   </script>
-    <audio id="backgroundMusic" src="https://library.hernepus.com/change.flac" autoplay></audio>
-    <script src="visualizer.js"></script>
 </body>
 </html>
