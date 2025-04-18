@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>页面未开放</title>
+  <title>Typing Test Page</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
@@ -56,8 +56,37 @@
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
+  <style>
+    /* 可视化容器样式 */
+    .visualizer-container {
+        width: 600px;
+        height: 200px;
+        background: #000;
+        margin: 20px auto;
+        position: relative;
+    }
+    
+    #audioCanvas {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .visualizer-status {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-family: Arial;
+        pointer-events: none;
+    }
+  </style>
 </head>
 <body>
+  <div class="visualizer-container">
+    <canvas id="audioCanvas"></canvas>
+    <div class="visualizer-status">点击此处开始</div>
+</div>
 
   <nav>
     <a href="#">HOME</a>
@@ -85,6 +114,7 @@
       output.appendChild(span);
     });
   </script>
+    <audio id="backgroundMusic" src="https://library.hernepus.com/change.flac"></audio>
+    <script src="visualizer.js"></script>
 </body>
 </html>
-
