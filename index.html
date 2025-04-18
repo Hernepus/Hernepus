@@ -1,38 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Main - Hernepus</title>
-    <link rel="stylesheet" href="main.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Typing Test Page</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      color: white;
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+    }
+
+    nav {
+      width: 100%;
+      padding: 1em;
+      background-color: #111;
+      display: flex;
+      justify-content: space-around;
+      border-bottom: 2px solid #444;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-size: 0.75rem;
+    }
+
+    .container {
+      height: 90vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .typewriter {
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-width: 90%;
+    }
+
+    .char {
+      opacity: 0;
+      animation: typeIn 0.05s forwards;
+    }
+
+    @keyframes typeIn {
+      from { opacity: 0; transform: translateY(-0.2em); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
 <body>
-    <!-- 导航栏 -->
-    <nav class="nav-container">
-        <ul class="nav-menu">
-            <li><a href="/" class="nav-item">主页</a></li>
-            <li><a href="/interloper-arg" class="nav-item">Interloper ARG</a></li>
-            <li><a href="/oc" class="nav-item">OC</a></li>
-            <li><a href="javascript:void(0)" class="nav-item">联系我</a></li>
-        </ul>
-    </nav>
 
-    <!-- 雨滴粒子容器 -->
-    <div id="particles-js"></div>
-    
-    <!-- 遮罩层 -->
-    <div class="overlay"></div>
+  <nav>
+    <a href="#">HOME</a>
+    <a href="#">PROJECTS</a>
+    <a href="#">OC</a>
+    <a href="#">ABOUT ME</a>
+  </nav>
 
-    <!-- 内容区 -->
-    <div class="content">
-        <h1>Hey! I'm Hernepus!</h1>
-        <p>
-     <a href=" https://tinyurl.com/Hernepus" style="background-color: rgb(217, 240, 236); color: rgb(110, 103, 202); font-family: 'Segoe UI'; font-size: 25px; text-decoration: none;">Contact me on BiliBili!</a>
-        </p>
-    </div>
+  <div class="container">
+    <div id="output" class="typewriter"></div>
+  </div>
 
-    <!-- 底部版权 -->
-    <div class="footer">
-        Domain owned by Hernepus © Supported by Deepseek-R1 & Myself!
-    </div>
+  <script>
+    const text = `"Successfully Connected. Welcome Back."
+  
+
+    页面未开放。`;
+    const output = document.getElementById('output');
+
+    text.split('').forEach((char, i) => {
+      const span = document.createElement('span');
+      span.textContent = char;
+      span.className = 'char';
+      span.style.animationDelay = `${i * 0.05}s`;
+      output.appendChild(span);
+    });
+  </script>
 </body>
 </html>
+
