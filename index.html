@@ -58,9 +58,69 @@
       from { opacity: 0; transform: translateY(-0.2em); }
       to { opacity: 1; transform: translateY(0); }
     }
+    @media (max-width: 768px) {
+  /* 导航栏改为垂直布局 */
+  nav {
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5em;
+    position: fixed;
+    bottom: 0;
+    top: auto; /* 将导航栏固定到底部 */
+    border-top: 2px solid #444;
+    border-bottom: none;
+  }
+
+  /* 增大链接触摸区域 */
+  nav a {
+    font-size: 0.9rem;
+    padding: 0.8em 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* 调整内容区高度，避免被底部导航遮挡 */
+  .container {
+    height: calc(90vh - 60px);
+  }
+}
+    /* 汉堡菜单样式 */
+.hamburger {
+  display: none; /* 默认隐藏 */
+  position: fixed;
+  bottom: 1em;
+  right: 1em;
+  background: #111;
+  border: 2px solid #444;
+  color: white;
+  padding: 0.5em;
+  z-index: 100;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  /* 移动端隐藏原始导航栏 */
+  nav {
+    display: none;
+    position: fixed;
+    bottom: 3em; /* 与汉堡按钮留出空间 */
+    width: 100%;
+  }
+
+  /* 显示汉堡菜单 */
+  .hamburger {
+    display: block;
+  }
+
+  /* 展开导航栏时的样式 */
+  nav.active {
+    display: flex;
+  }
+}
   </style>
 </head>
 <body>
+<button class="hamburger">☰</button>
 
   <nav>
     <a href="/">HOME</a>
@@ -86,6 +146,12 @@
       span.style.animationDelay = `${i * 0.05}s`;
       output.appendChild(span);
     });
+    const hamburger = document.querySelector('.hamburger');
+const nav = document.querySelector('nav');
+
+hamburger.addEventListener('click', () => {
+  nav.classList.toggle('active');
+});
   </script>
 
 </body>
