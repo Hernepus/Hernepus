@@ -88,14 +88,15 @@
 .hamburger {
   display: none; /* 默认隐藏 */
   position: fixed;
-  bottom: 1em;
-  right: 1em;
+  top: 1em;      /* 修改为顶部定位 */
+  left: 1em;     /* 修改为左侧定位 */
   background: #111;
   border: 2px solid #444;
   color: white;
   padding: 0.5em;
   z-index: 100;
   cursor: pointer;
+  border-radius: 4px; /* 可选：添加圆角 */
 }
 
 @media (max-width: 768px) {
