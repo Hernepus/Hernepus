@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<audio id="backgroundMusic" src="https://library.hernepus.com/change.flac" autoplay></audio>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>该页面未开放</title>
+  <title>Limbo - Hernepus</title>
 
+  <!-- 像素字体：Press Start 2P -->
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
   <style>
@@ -17,6 +17,7 @@
       overflow: hidden;
     }
 
+    /* 顶部导航栏样式 */
     nav {
       width: 100%;
       padding: 1em;
@@ -57,44 +58,29 @@
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
-  <style>
-    /* 可视化容器样式 */
-    .visualizer-container {
-        width: 600px;
-        height: 200px;
-        background: #000;
-        margin: 20px auto;
-        position: relative;
-    }
-    
-    #audioCanvas {
-        width: 100%;
-        height: 100%;
-    }
-    
-    .visualizer-status {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: #fff;
-        font-family: Arial;
-        pointer-events: none;
-    }
-  </style>
 </head>
 <body>
+
   <nav>
     <a href="#">HOME</a>
+    <a href="#">ENTERTAINMENT</a>
     <a href="#">PROJECTS</a>
-    <a href="#">OC</a>
     <a href="#">ABOUT ME</a>
   </nav>
-  <script>
-    const text = `"Successfully Connected. Welcome Back."
-  
 
-    页面未开放。`;
+  <!-- 内容区 -->
+  <div class="container">
+    <div id="output" class="typewriter"></div>
+  </div>
+
+  <script>
+    const text = `Connected Successfully.
+    
+    
+  此页面未公开
+    
+  Please try again later.`;
+
     const output = document.getElementById('output');
 
     text.split('').forEach((char, i) => {
@@ -105,5 +91,6 @@
       output.appendChild(span);
     });
   </script>
+
 </body>
 </html>
