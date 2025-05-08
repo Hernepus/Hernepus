@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+    <meta charset="UTF-8">
+<head>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+            font-family: 'Courier New', monospace;
+        }
+        
+        h1 {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            animation: jitter 0.1s infinite;
+            font-size: 24px;
+            pointer-events: none;
+        }
+
+        #inputBox {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 10px;
+            width: 200px;
+            outline: none;
+            z-index: 999;
+        }
+
+        @keyframes jitter {
+            0%, 100% { transform: translate(-50%, -50%) translate(0.5px, -0.5px); }
+            50% { transform: translate(-50%, -50%) translate(-0.5px, 0.5px); }
+        }
+
+        .word {
+            position: absolute;
+            color: white;
+            font-size: 16px;
+            opacity: 0;
+            animation: 
+                fadeInOut 8s linear forwards,
+                wordJitter 0.1s infinite;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        @keyframes wordJitter {
+            0%, 100% { transform: translate(0.5px, -0.5px); }
+            50% { transform: translate(-0.5px, 0.5px); }
+        }
+    </style>
+</head>
+<body>
+    <h1>LIMBO OBSERVER</h1>
+    <input type="text" id="inputBox" placeholder="Please log-in a valid account.">
+
+    <script>
+        const words = ["KILL YOURSELF", "LIMBO", "LOST", "LEAVE", "BACK"];
+        
+        function createWord() {
+            const word = document.createElement('div');
+            word.className = 'word';
+            word.textContent = words[Math.floor(Math.random() * words.length)];
+            
+            word.style.left = Math.random() * 95 + 'vw';
+            word.style.top = Math.random() * 85 + 'vh';
+            
+            document.body.appendChild(word);
+            
+            setTimeout(() => word.remove(), 8000);
+        }
+
+        document.getElementById('inputBox').addEventListener('input', function(e) {
+            if(e.target.value.toLowerCase() === 'leave') {
+                document.body.style.color = '#8B0000';
+                document.body.style.fontSize = '24px';
+                setTimeout(() => window.close(), 1000);
+            }
+        });
+
+        setInterval(createWord, 1000);
+    </script>
+</body>
+</html>
