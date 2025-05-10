@@ -10,30 +10,34 @@
             background: black;
             font-family: 'Courier New', monospace;
             touch-action: manipulation;
+            transition: all 0.5s;
         }
         
         h1 {
             position: absolute;
-            top: 15%;
+            top: 12%;
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
-            animation: jitter 0.1s infinite;
-            font-size: 5vw;
+            animation: titleJitter 0.1s infinite;
+            font-size: 6vw;
             pointer-events: none;
             width: 90%;
             text-align: center;
+            padding: 15px;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
         }
 
         .input-container {
             position: absolute;
-            top: 30%;
+            top: 40%; /* 下移输入框 */
             left: 50%;
             transform: translate(-50%, -50%);
             display: flex;
-            gap: 10px;
-            width: 80%;
-            max-width: 400px;
+            gap: 8px;
+            width: 75%;
+            max-width: 350px; /* 缩小容器 */
         }
 
         #inputBox {
@@ -41,40 +45,31 @@
             background: transparent;
             border: 1px solid white;
             color: white;
-            padding: 12px;
-            font-size: 16px;
+            padding: 10px; /* 缩小内边距 */
+            font-size: 14px; /* 缩小字体 */
             outline: none;
-            min-height: 44px;
+            min-height: 40px; /* 减小高度 */
         }
 
         #submitBtn {
             background: transparent;
             border: 1px solid white;
             color: white;
-            padding: 0 20px;
+            padding: 0 15px; /* 缩小按钮 */
             cursor: pointer;
-            min-height: 44px;
+            min-height: 40px;
             transition: all 0.3s;
+            font-size: 14px;
         }
 
-        #submitBtn:active {
-            background: rgba(255,255,255,0.2);
+        @keyframes titleJitter {
+            0%, 100% { transform: translate(-50%, -50%) translate(3px, -3px); }
+            50% { transform: translate(-50%, -50%) translate(-3px, 3px); }
         }
 
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 7vw;
-                top: 10%;
-            }
-            .input-container {
-                top: 25%;
-                width: 90%;
-            }
-        }
-
-        @keyframes jitter {
-            0%, 100% { transform: translate(-50%, -50%) translate(0.5px, -0.5px); }
-            50% { transform: translate(-50%, -50%) translate(-0.5px, 0.5px); }
+        @keyframes wordJitter {
+            0%, 100% { transform: translate(0.5px, -0.5px); }
+            50% { transform: translate(-0.5px, 0.5px); }
         }
 
         .word {
@@ -87,6 +82,7 @@
                 wordJitter 0.1s infinite;
             max-width: 90%;
             word-wrap: break-word;
+            pointer-events: none;
         }
 
         @keyframes fadeInOut {
@@ -96,14 +92,31 @@
             100% { opacity: 0; }
         }
 
-        @keyframes wordJitter {
-            0%, 100% { transform: translate(0.5px, -0.5px); }
-            50% { transform: translate(-0.5px, 0.5px); }
+        .title-safe-area {
+            position: absolute;
+            top: 8%;
+            left: 50%;
+            width: 85vw;
+            height: 20vh;
+            transform: translateX(-50%);
+            pointer-events: none;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 8vw;
+                top: 10%;
+            }
+            .input-container {
+                top: 35%;
+                width: 85%;
+            }
         }
     </style>
 </head>
 <body>
     <h1>LIMBO'S OBSERVER</h1>
+    <div class="title-safe-area"></div>
     <div class="input-container">
         <input type="text" id="inputBox" placeholder="Enter command...">
         <button id="submitBtn">LOGIN</button>
@@ -111,36 +124,52 @@
 
     <script>
         const words = ["KILL YOURSELF", "LIMBO", "LOST", "LEAVE", "BACK", "WHO", "HAHA", "STRING", "LOADED", "SAVED"];
-        
+        const safeArea = document.querySelector('.title-safe-area').getBoundingClientRect();
+
+        function isInSafeArea(x, y) {
+            return (
+                x > (50 - 42.5) && 
+                x < (50 + 42.5) && 
+                y > 8 && y < 28 
+            );
+        }
+
         function createWord() {
             const word = document.createElement('div');
             word.className = 'word';
             word.textContent = words[Math.floor(Math.random() * words.length)];
             
-            word.style.left = Math.random() * 85 + 'vw';
-            word.style.top = Math.random() * 80 + 'vh';
+            let posX, posY;
+            do {
+                posX = Math.random() * 85;
+                posY = Math.random() * 80;
+            } while(isInSafeArea(posX, posY));
+
+            word.style.left = posX + 'vw';
+            word.style.top = posY + 'vh';
             
             document.body.appendChild(word);
-            
             setTimeout(() => word.remove(), 8000);
         }
 
         function handleCommand(value) {
             if(value.toLowerCase() === 'leave') {
-                document.body.style.color = '#8B0000';
-                document.body.style.fontSize = '24px';
+                document.body.style.backgroundColor = '#8B0000';
+                document.body.style.color = '#000';
+                document.body.style.fontSize = '28px';
+                
+                const audio = new Audio('https://library.hernepus.com/bye.WAV');
+                audio.play().catch(error => console.log('Audio play failed:', error));
+
                 setTimeout(() => window.close(), 1000);
             }
         }
-
         document.getElementById('submitBtn').addEventListener('click', () => {
             handleCommand(document.getElementById('inputBox').value);
         });
 
         document.getElementById('inputBox').addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') {
-                handleCommand(e.target.value);
-            }
+            if(e.key === 'Enter') handleCommand(e.target.value);
         });
 
         document.getElementById('submitBtn').addEventListener('touchstart', () => {
@@ -149,7 +178,6 @@
         document.getElementById('submitBtn').addEventListener('touchend', () => {
             document.getElementById('submitBtn').style.background = 'transparent';
         });
-
         setInterval(createWord, 500);
     </script>
 </body>
