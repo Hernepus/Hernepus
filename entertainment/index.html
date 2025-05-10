@@ -1,39 +1,75 @@
 <!DOCTYPE html>
 <html>
-    <meta charset="UTF-8">
 <head>
-    <title>Entertainment...?</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background: black;
             font-family: 'Courier New', monospace;
+            touch-action: manipulation;
         }
         
         h1 {
             position: absolute;
-            top: 20%;
+            top: 15%;
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
             animation: jitter 0.1s infinite;
-            font-size: 24px;
+            font-size: 5vw;
             pointer-events: none;
+            width: 90%;
+            text-align: center;
         }
 
-        #inputBox {
+        .input-container {
             position: absolute;
             top: 30%;
             left: 50%;
             transform: translate(-50%, -50%);
+            display: flex;
+            gap: 10px;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        #inputBox {
+            flex: 1;
             background: transparent;
             border: 1px solid white;
             color: white;
-            padding: 10px;
-            width: 200px;
+            padding: 12px;
+            font-size: 16px;
             outline: none;
-            z-index: 999;
+            min-height: 44px;
+        }
+
+        #submitBtn {
+            background: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 0 20px;
+            cursor: pointer;
+            min-height: 44px;
+            transition: all 0.3s;
+        }
+
+        #submitBtn:active {
+            background: rgba(255,255,255,0.2);
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 7vw;
+                top: 10%;
+            }
+            .input-container {
+                top: 25%;
+                width: 90%;
+            }
         }
 
         @keyframes jitter {
@@ -44,11 +80,13 @@
         .word {
             position: absolute;
             color: white;
-            font-size: 16px;
+            font-size: 4vw;
             opacity: 0;
             animation: 
                 fadeInOut 8s linear forwards,
                 wordJitter 0.1s infinite;
+            max-width: 90%;
+            word-wrap: break-word;
         }
 
         @keyframes fadeInOut {
@@ -65,31 +103,51 @@
     </style>
 </head>
 <body>
-    <h1>LIMBO OBSERVER</h1>
-    <input type="text" id="inputBox" placeholder="Please log-in a valid account.">
+    <h1>LIMBO'S OBSERVER</h1>
+    <div class="input-container">
+        <input type="text" id="inputBox" placeholder="Enter command...">
+        <button id="submitBtn">LOGIN</button>
+    </div>
 
     <script>
-        const words = ["KILL YOURSELF", "LIMBO", "LOST", "LEAVE", "BACK"];
+        const words = ["KILL YOURSELF", "LIMBO", "LOST", "LEAVE", "BACK", "WHO", "HAHA", "STRING", "LOADED", "SAVED"];
         
         function createWord() {
             const word = document.createElement('div');
             word.className = 'word';
             word.textContent = words[Math.floor(Math.random() * words.length)];
             
-            word.style.left = Math.random() * 95 + 'vw';
-            word.style.top = Math.random() * 85 + 'vh';
+            word.style.left = Math.random() * 85 + 'vw';
+            word.style.top = Math.random() * 80 + 'vh';
             
             document.body.appendChild(word);
             
             setTimeout(() => word.remove(), 8000);
         }
 
-        document.getElementById('inputBox').addEventListener('input', function(e) {
-            if(e.target.value.toLowerCase() === 'leave') {
+        function handleCommand(value) {
+            if(value.toLowerCase() === 'leave') {
                 document.body.style.color = '#8B0000';
                 document.body.style.fontSize = '24px';
                 setTimeout(() => window.close(), 1000);
             }
+        }
+
+        document.getElementById('submitBtn').addEventListener('click', () => {
+            handleCommand(document.getElementById('inputBox').value);
+        });
+
+        document.getElementById('inputBox').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                handleCommand(e.target.value);
+            }
+        });
+
+        document.getElementById('submitBtn').addEventListener('touchstart', () => {
+            document.getElementById('submitBtn').style.background = 'rgba(255,255,255,0.2)';
+        });
+        document.getElementById('submitBtn').addEventListener('touchend', () => {
+            document.getElementById('submitBtn').style.background = 'transparent';
         });
 
         setInterval(createWord, 500);
