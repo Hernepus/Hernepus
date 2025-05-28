@@ -107,6 +107,16 @@
             border-radius: 4px;
             width: 80px;
         }
+        
+        .update-alert {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { background-color: rgba(46, 204, 113, 0.1); }
+            50% { background-color: rgba(46, 204, 113, 0.3); }
+            100% { background-color: rgba(46, 204, 113, 0.1); }
+        }
     </style>
 </head>
 <body>
@@ -126,25 +136,27 @@
 
     <div class="status-container">
         <div class="status-badge">实时状态</div>
-        <div id="status">Loading...</div>
+        <div id="status">系统初始化中...</div>
         <div id="historyLog"></div>
     </div>
 
     <audio id="alertSound" src="https://library.hernepus.com/bye.WAV"></audio>
+    <iframe id="hiddenDownloader" style="display:none;"></iframe>
 
     <script>
         // 生产配置
         const CONFIG = {
             fileUrl: 'https://wavespray.dathost.net/fastdl/teamfortress2/679d9656b8573d37aa848d60/materials/view.vtf',
-            checkInterval: localStorage.getItem('checkInterval') || 5000,
-            maxRetries: 5,
-            retryDelay: 5000
+            checkInterval: localStorage.getItem('checkInterval') || 300000, // 默认5分钟
+            maxRetries: 3,
+            retryDelay: 10000
         };
 
         // 状态管理
         let monitoringActive = true;
         let retryCount = 0;
-        let currentHash = localStorage.getItem('fileHash') || null;
+        let lastFileSize = localStorage.getItem('lastFileSize') || null;
+        let lastCheckTime = 0;
 
         // DOM 元素
         const elements = {
@@ -153,39 +165,45 @@
             toggleButton: document.getElementById('toggleButton'),
             loading: document.getElementById('loadingIndicator'),
             intervalInput: document.getElementById('intervalInput'),
-            audio: document.getElementById('alertSound')
+            audio: document.getElementById('alertSound'),
+            downloader: document.getElementById('hiddenDownloader')
         };
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             elements.intervalInput.value = CONFIG.checkInterval / 60000;
-            if (!window.crypto?.subtle) {
-                showError('浏览器不支持安全加密功能，请使用现代浏览器');
-                return;
-            }
             checkUpdate();
         });
 
-        // 核心功能
+        // 核心功能 - 修改为HEAD请求方案
         async function checkUpdate() {
             if (!monitoringActive) return;
+            
+            // 防止高频请求
+            const now = Date.now();
+            if (now - lastCheckTime < 30000) { // 最少30秒间隔
+                setTimeout(checkUpdate, CONFIG.checkInterval);
+                return;
+            }
+            lastCheckTime = now;
 
             try {
                 showLoading(true);
-                logActivity('开始检查更新...');
+                logActivity('正在检查文件更新...');
                 
-                const response = await fetchWithTimeout(CONFIG.fileUrl, { 
-                    cache: 'no-cache',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                // 阶段1：获取文件头信息
+                const headRes = await fetch(CONFIG.fileUrl, {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    cache: 'no-store'
                 });
-
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
-                const fileData = await response.arrayBuffer();
-                const newHash = await sha256(fileData);
-
-                if (newHash !== currentHash) {
-                    handleFileUpdate(newHash, fileData);
+                // 阶段2：通过隐藏iframe触发下载
+                elements.downloader.src = `${CONFIG.fileUrl}?ts=${now}`;
+                
+                const newSize = headRes.headers.get('content-length');
+                if (newSize && newSize !== lastFileSize) {
+                    handleFileUpdate(newSize);
                 } else {
                     logActivity('当前已是最新版本');
                 }
@@ -200,28 +218,50 @@
             }
         }
 
-        // 工具函数
-        async function sha256(buffer) {
-            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-            return Array.from(new Uint8Array(hashBuffer))
-                .map(b => b.toString(16).padStart(2, '0')).join('');
+        // 文件更新处理
+        function handleFileUpdate(newSize) {
+            elements.audio.play().catch(e => console.log('音频播放失败:', e));
+            
+            const statusMessage = lastFileSize 
+                ? `检测到新版本 (大小变化: ${formatBytes(lastFileSize)} → ${formatBytes(newSize)})`
+                : `初始化文件版本 (${formatBytes(newSize)})`;
+            
+            logActivity(statusMessage);
+            elements.status.innerHTML = `<span class="update-alert">${statusMessage}</span>`;
+            
+            lastFileSize = newSize;
+            localStorage.setItem('lastFileSize', newSize);
         }
 
-        async function fetchWithTimeout(resource, options = {}) {
-            const { timeout = 10000 } = options;
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeout);
-            
-            const response = await fetch(resource, {
-                ...options,
-                signal: controller.signal  
-            });
-            
-            clearTimeout(id);
-            return response;
+        // 辅助函数：格式化文件大小
+        function formatBytes(bytes) {
+            bytes = parseInt(bytes);
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // 用户交互
+        // 错误处理
+        function handleError(error) {
+            console.error('[监控错误]', error);
+            retryCount++;
+            
+            const errorMessage = error.message.includes('Failed to fetch') 
+                ? '网络请求失败' 
+                : error.message.split(':')[0];
+            
+            logActivity(`错误: ${errorMessage} (重试 ${retryCount}/${CONFIG.maxRetries})`);
+            
+            if (retryCount >= CONFIG.maxRetries) {
+                showError('超过最大重试次数，监控已暂停');
+                monitoringActive = false;
+                elements.toggleButton.textContent = '监控已停止';
+            }
+        }
+
+        // 用户交互功能保持不变
         function toggleMonitoring() {
             monitoringActive = !monitoringActive;
             elements.toggleButton.textContent = monitoringActive ? '暂停监控' : '恢复监控';
@@ -236,7 +276,6 @@
             logActivity(`检查间隔已设置为 ${minutes} 分钟`);
         }
 
-        // UI 更新
         function logActivity(message) {
             const entry = document.createElement('div');
             entry.textContent = `${new Date().toLocaleString()} - ${message}`;
@@ -247,58 +286,12 @@
             elements.loading.style.display = show ? 'inline-block' : 'none';
         }
 
-        function handleFileUpdate(newHash, fileData) {
-            elements.audio.play().catch(() => console.warn('音频播放被阻止'));
-            
-            const updateMessage = currentHash ? '检测到新版本' : '初始化版本';
-            logActivity(`${updateMessage} [${newHash.slice(0, 8)}]`);
-
-            if (currentHash && confirm(`${updateMessage}，是否立即下载？`)) {
-                triggerDownload(fileData);
-            }
-            
-            currentHash = newHash;
-            localStorage.setItem('fileHash', newHash);
-        }
-
-        function triggerDownload(data) {
-            const blob = new Blob([data]);
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            
-            link.href = url;
-            link.download = `view_${Date.now()}.vtf`;
-            link.style.display = 'none';
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-
-        function handleError(error) {
-            console.error('[Error]', error);
-            retryCount++;
-            
-            const errorMessage = error.name === 'AbortError' 
-                ? '请求超时' 
-                : error.message;
-
-            logActivity(`错误: ${errorMessage} (重试 ${retryCount}/${CONFIG.maxRetries})`);
-            
-            if (retryCount >= CONFIG.maxRetries) {
-                showError('超过最大重试次数，监控已停止');
-                monitoringActive = false;
-                elements.toggleButton.textContent = '监控已停止';
-            }
-        }
-
         function showError(message) {
             elements.status.innerHTML = `⚠️ ${message}`;
             elements.status.style.color = 'var(--error-color)';
         }
     </script>
-        <footer>
+    <footer>
         <div class="powered-by">Monitor Powered by <span>Deepseek-R1</span></div>
     </footer>
 </body>
