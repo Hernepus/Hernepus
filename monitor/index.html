@@ -35,9 +35,8 @@
       font-weight: bold;
     }
     .controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
+      display: flex;
+      justify-content: space-between;
       margin: 20px 0;
     }
     .status-container {
@@ -89,12 +88,6 @@
     button:hover {
       opacity: 0.9;
     }
-    input[type="number"] {
-      padding: 6px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      width: 80px;
-    }
     .update-alert {
       animation: pulse 1.5s infinite;
     }
@@ -108,12 +101,11 @@
 <body>
   <h1>view.vtf 自动校验器 🔄</h1>
 
+  <p style="background: #ecf0f1; padding: 10px; border-left: 4px solid #2ecc71;">
+    这个监视器现在会按照 <strong>5秒一次</strong> 的频率检测更新，如果有更新，会立即下载 <code>view.vtf</code> 文件并提示你。
+  </p>
+
   <div class="controls">
-    <div>
-      <label>检查间隔（分钟）: </label>
-      <input type="number" id="intervalInput" min="1" max="1440" value="5">
-      <button onclick="updateInterval()">应用</button>
-    </div>
     <div>
       <button id="toggleButton" onclick="toggleMonitoring()">暂停监控</button>
       <span id="loadingIndicator" class="loading" style="display: none;"></span>
@@ -122,7 +114,7 @@
 
   <div class="status-container">
     <div class="status-badge">实时状态</div>
-    <div id="status">系统初始化中...</div>
+    <div id="status">正在侦测...</div>
     <div id="historyLog"></div>
   </div>
 
@@ -132,9 +124,8 @@
   <script>
     const CONFIG = {
       fileUrl: 'https://wavespray.dathost.net/fastdl/teamfortress2/679d9656b8573d37aa848d60/materials/view.vtf',
-      checkInterval: localStorage.getItem('checkInterval') || 300000,
-      maxRetries: 3,
-      retryDelay: 10000
+      checkInterval: 5000, // 固定5秒
+      maxRetries: 3
     };
 
     let monitoringActive = true;
@@ -147,13 +138,11 @@
       historyLog: document.getElementById('historyLog'),
       toggleButton: document.getElementById('toggleButton'),
       loading: document.getElementById('loadingIndicator'),
-      intervalInput: document.getElementById('intervalInput'),
       audio: document.getElementById('alertSound'),
       downloader: document.getElementById('hiddenDownloader')
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-      elements.intervalInput.value = CONFIG.checkInterval / 60000;
       checkUpdate();
     });
 
@@ -161,7 +150,7 @@
       if (!monitoringActive) return;
 
       const now = Date.now();
-      if (now - lastCheckTime < 30000) {
+      if (now - lastCheckTime < 3000) {
         setTimeout(checkUpdate, CONFIG.checkInterval);
         return;
       }
@@ -169,7 +158,7 @@
 
       try {
         showLoading(true);
-        logActivity('正在检查文件更新...');
+        logActivity('正在校验、比对中。');
 
         const headRes = await fetch(CONFIG.fileUrl, {
           method: 'HEAD',
@@ -181,7 +170,7 @@
         if (newSize && newSize !== lastFileSize) {
           handleFileUpdate(newSize);
         } else {
-          logActivity('当前已是最新版本');
+          logActivity('没有检测到文件变化');
         }
 
         retryCount = 0;
@@ -244,13 +233,6 @@
       elements.toggleButton.textContent = monitoringActive ? '暂停监控' : '恢复监控';
       logActivity(`监控已${monitoringActive ? '恢复' : '暂停'}`);
       if (monitoringActive) checkUpdate();
-    }
-
-    function updateInterval() {
-      const minutes = parseInt(elements.intervalInput.value);
-      CONFIG.checkInterval = minutes * 60000;
-      localStorage.setItem('checkInterval', CONFIG.checkInterval);
-      logActivity(`检查间隔已设置为 ${minutes} 分钟`);
     }
 
     function logActivity(message) {
