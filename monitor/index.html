@@ -107,15 +107,20 @@
             border-radius: 4px;
             width: 80px;
         }
-        
+
+        /* 新增样式 */
         .update-alert {
-            animation: pulse 1.5s infinite;
+            padding: 10px;
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 3px solid #2ecc71;
+            margin: 10px 0;
         }
-        
-        @keyframes pulse {
-            0% { background-color: rgba(46, 204, 113, 0.1); }
-            50% { background-color: rgba(46, 204, 113, 0.3); }
-            100% { background-color: rgba(46, 204, 113, 0.1); }
+        .download-btn {
+            background: #2ecc71;
+            margin-left: 10px;
+        }
+        .download-btn:hover {
+            background: #27ae60;
         }
     </style>
 </head>
@@ -136,12 +141,11 @@
 
     <div class="status-container">
         <div class="status-badge">实时状态</div>
-        <div id="status">系统初始化中...</div>
+        <div id="status">Loading...</div>
         <div id="historyLog"></div>
     </div>
 
     <audio id="alertSound" src="https://library.hernepus.com/bye.WAV"></audio>
-    <iframe id="hiddenDownloader" style="display:none;"></iframe>
 
     <script>
         // 生产配置
@@ -155,8 +159,8 @@
         // 状态管理
         let monitoringActive = true;
         let retryCount = 0;
-        let lastFileSize = localStorage.getItem('lastFileSize') || null;
-        let lastCheckTime = 0;
+        let currentHash = localStorage.getItem('fileHash') || null;
+        let isFirstCheck = true;
 
         // DOM 元素
         const elements = {
@@ -165,8 +169,7 @@
             toggleButton: document.getElementById('toggleButton'),
             loading: document.getElementById('loadingIndicator'),
             intervalInput: document.getElementById('intervalInput'),
-            audio: document.getElementById('alertSound'),
-            downloader: document.getElementById('hiddenDownloader')
+            audio: document.getElementById('alertSound')
         };
 
         // 初始化
@@ -175,38 +178,42 @@
             checkUpdate();
         });
 
-        // 核心功能 - 修改为HEAD请求方案
+        // 核心功能 - 修改为两阶段检测
         async function checkUpdate() {
             if (!monitoringActive) return;
-            
-            // 防止高频请求
-            const now = Date.now();
-            if (now - lastCheckTime < 30000) { // 最少30秒间隔
-                setTimeout(checkUpdate, CONFIG.checkInterval);
-                return;
-            }
-            lastCheckTime = now;
 
             try {
                 showLoading(true);
-                logActivity('正在检查文件更新...');
+                logActivity('正在检测文件头信息...');
                 
-                // 阶段1：获取文件头信息
+                // 阶段1：HEAD请求检测元数据
                 const headRes = await fetch(CONFIG.fileUrl, {
                     method: 'HEAD',
                     mode: 'no-cors',
                     cache: 'no-store'
                 });
-                
-                // 阶段2：通过隐藏iframe触发下载
-                elements.downloader.src = `${CONFIG.fileUrl}?ts=${now}`;
-                
+
+                // 阶段2：获取关键指标
                 const newSize = headRes.headers.get('content-length');
-                if (newSize && newSize !== lastFileSize) {
-                    handleFileUpdate(newSize);
+                const lastModified = headRes.headers.get('last-modified') || '未知';
+
+                // 首次运行只记录不提示
+                if (isFirstCheck) {
+                    currentHash = await getFileHash();
+                    isFirstCheck = false;
+                    logActivity(`初始化完成 | 文件大小: ${formatBytes(newSize)} | 修改时间: ${lastModified}`);
+                    return;
+                }
+
+                // 获取当前文件哈希进行比较
+                const newHash = await getFileHash();
+                
+                if (newHash !== currentHash) {
+                    handleUpdateDetected(newHash, newSize, lastModified);
                 } else {
                     logActivity('当前已是最新版本');
                 }
+                
                 retryCount = 0;
             } catch (error) {
                 handleError(error);
@@ -218,24 +225,67 @@
             }
         }
 
-        // 文件更新处理
-        function handleFileUpdate(newSize) {
+        // 获取文件哈希（仅在检测到变化时调用）
+        async function getFileHash() {
+            const response = await fetch(CONFIG.fileUrl, { 
+                cache: 'no-cache',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const fileData = await response.arrayBuffer();
+            return await sha256(fileData);
+        }
+
+        // 更新处理函数
+        async function handleUpdateDetected(newHash, fileSize, lastModified) {
             elements.audio.play().catch(e => console.log('音频播放失败:', e));
             
-            const statusMessage = lastFileSize 
-                ? `检测到新版本 (大小变化: ${formatBytes(lastFileSize)} → ${formatBytes(newSize)})`
-                : `初始化文件版本 (${formatBytes(newSize)})`;
+            const statusMsg = `检测到新版本 (大小: ${formatBytes(fileSize)} | 修改时间: ${lastModified})`;
+            logActivity(statusMsg);
             
-            logActivity(statusMessage);
-            elements.status.innerHTML = `<span class="update-alert">${statusMessage}</span>`;
+            // 显示更新通知但不自动下载
+            elements.status.innerHTML = `
+                <div class="update-alert">
+                    ${statusMsg}
+                    <button class="download-btn" onclick="downloadLatest('${newHash}')">立即下载</button>
+                </div>
+            `;
             
-            lastFileSize = newSize;
-            localStorage.setItem('lastFileSize', newSize);
+            // 保存新哈希值
+            currentHash = newHash;
+            localStorage.setItem('fileHash', newHash);
+        }
+
+        // 手动下载函数
+        async function downloadLatest(newHash) {
+            try {
+                showLoading(true);
+                logActivity('开始下载最新版本...');
+                
+                const response = await fetch(CONFIG.fileUrl, { 
+                    cache: 'no-cache',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const fileData = await response.arrayBuffer();
+                
+                // 二次验证哈希
+                const verifyHash = await sha256(fileData);
+                if (verifyHash !== newHash) {
+                    throw new Error('文件校验失败');
+                }
+                
+                triggerDownload(fileData);
+                logActivity('下载完成且校验通过');
+            } catch (error) {
+                logActivity(`下载失败: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
         }
 
         // 辅助函数：格式化文件大小
         function formatBytes(bytes) {
             bytes = parseInt(bytes);
+            if (isNaN(bytes)) return '未知大小';
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -243,25 +293,36 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // 错误处理
-        function handleError(error) {
-            console.error('[监控错误]', error);
-            retryCount++;
-            
-            const errorMessage = error.message.includes('Failed to fetch') 
-                ? '网络请求失败' 
-                : error.message.split(':')[0];
-            
-            logActivity(`错误: ${errorMessage} (重试 ${retryCount}/${CONFIG.maxRetries})`);
-            
-            if (retryCount >= CONFIG.maxRetries) {
-                showError('超过最大重试次数，监控已暂停');
-                monitoringActive = false;
-                elements.toggleButton.textContent = '监控已停止';
-            }
+        // 工具函数保持不变
+        async function sha256(buffer) {
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // 用户交互功能保持不变
+        async function fetchWithTimeout(resource, options = {}) {
+            const { timeout = 10000 } = options;
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            const response = await fetch(resource, {
+                ...options,
+                signal: controller.signal  
+            });
+            clearTimeout(id);
+            return response;
+        }
+
+        function triggerDownload(data) {
+            const blob = new Blob([data]);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `view_${new Date().toISOString().slice(0,10)}.vtf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 其余原有函数保持不变
         function toggleMonitoring() {
             monitoringActive = !monitoringActive;
             elements.toggleButton.textContent = monitoringActive ? '暂停监控' : '恢复监控';
@@ -284,6 +345,25 @@
 
         function showLoading(show) {
             elements.loading.style.display = show ? 'inline-block' : 'none';
+        }
+
+        function handleError(error) {
+            console.error('[Error]', error);
+            retryCount++;
+            
+            const errorMessage = error.name === 'AbortError' 
+                ? '请求超时' 
+                : error.message.includes('Failed to fetch') 
+                    ? '网络连接失败' 
+                    : error.message.split(':')[0];
+
+            logActivity(`错误: ${errorMessage} (重试 ${retryCount}/${CONFIG.maxRetries})`);
+            
+            if (retryCount >= CONFIG.maxRetries) {
+                showError('超过最大重试次数，监控已暂停');
+                monitoringActive = false;
+                elements.toggleButton.textContent = '监控已停止';
+            }
         }
 
         function showError(message) {
