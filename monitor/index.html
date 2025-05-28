@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIEW - 监视器</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+            padding: 15px 0;
+        }
+
+        .powered-by {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+
+        .powered-by span {
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .status-container {
+            position: relative;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: #f9f9f9;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        #historyLog {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 10px;
+            margin-top: 15px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        input[type="number"] {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 80px;
+        }
+    </style>
+</head>
+<body>
+    <h1>view.vtf 自动校验器 🔄</h1>
+    
+    <div class="controls">
+        <div>
+            <label>检查间隔（分钟）: </label>
+            <input type="number" id="intervalInput" min="1" max="1440" value="5">
+            <button onclick="updateInterval()">应用</button>
+        </div>
+        <div>
+            <button id="toggleButton" onclick="toggleMonitoring()">暂停监控</button>
+            <span id="loadingIndicator" class="loading" style="display: none;"></span>
+        </div>
+    </div>
+
+    <div class="status-container">
+        <div class="status-badge">实时状态</div>
+        <div id="status">Loading...</div>
+        <div id="historyLog"></div>
+    </div>
+
+    <audio id="alertSound" src="https://library.hernepus.com/bye.WAV"></audio>
+
+    <script>
+        // 生产配置
+        const CONFIG = {
+            fileUrl: 'https://wavespray.dathost.net/fastdl/teamfortress2/679d9656b8573d37aa848d60/materials/view.vtf',
+            checkInterval: localStorage.getItem('checkInterval') || 5000,
+            maxRetries: 5,
+            retryDelay: 5000
+        };
+
+        // 状态管理
+        let monitoringActive = true;
+        let retryCount = 0;
+        let currentHash = localStorage.getItem('fileHash') || null;
+
+        // DOM 元素
+        const elements = {
+            status: document.getElementById('status'),
+            historyLog: document.getElementById('historyLog'),
+            toggleButton: document.getElementById('toggleButton'),
+            loading: document.getElementById('loadingIndicator'),
+            intervalInput: document.getElementById('intervalInput'),
+            audio: document.getElementById('alertSound')
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            elements.intervalInput.value = CONFIG.checkInterval / 60000;
+            if (!window.crypto?.subtle) {
+                showError('浏览器不支持安全加密功能，请使用现代浏览器');
+                return;
+            }
+            checkUpdate();
+        });
+
+        // 核心功能
+        async function checkUpdate() {
+            if (!monitoringActive) return;
+
+            try {
+                showLoading(true);
+                logActivity('开始检查更新...');
+                
+                const response = await fetchWithTimeout(CONFIG.fileUrl, { 
+                    cache: 'no-cache',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const fileData = await response.arrayBuffer();
+                const newHash = await sha256(fileData);
+
+                if (newHash !== currentHash) {
+                    handleFileUpdate(newHash, fileData);
+                } else {
+                    logActivity('当前已是最新版本');
+                }
+                retryCount = 0;
+            } catch (error) {
+                handleError(error);
+            } finally {
+                showLoading(false);
+                if (monitoringActive) {
+                    setTimeout(checkUpdate, CONFIG.checkInterval);
+                }
+            }
+        }
+
+        // 工具函数
+        async function sha256(buffer) {
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function fetchWithTimeout(resource, options = {}) {
+            const { timeout = 10000 } = options;
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            
+            const response = await fetch(resource, {
+                ...options,
+                signal: controller.signal  
+            });
+            
+            clearTimeout(id);
+            return response;
+        }
+
+        // 用户交互
+        function toggleMonitoring() {
+            monitoringActive = !monitoringActive;
+            elements.toggleButton.textContent = monitoringActive ? '暂停监控' : '恢复监控';
+            logActivity(`监控已${monitoringActive ? '恢复' : '暂停'}`);
+            if (monitoringActive) checkUpdate();
+        }
+
+        function updateInterval() {
+            const minutes = parseInt(elements.intervalInput.value);
+            CONFIG.checkInterval = minutes * 60000;
+            localStorage.setItem('checkInterval', CONFIG.checkInterval);
+            logActivity(`检查间隔已设置为 ${minutes} 分钟`);
+        }
+
+        // UI 更新
+        function logActivity(message) {
+            const entry = document.createElement('div');
+            entry.textContent = `${new Date().toLocaleString()} - ${message}`;
+            elements.historyLog.prepend(entry);
+        }
+
+        function showLoading(show) {
+            elements.loading.style.display = show ? 'inline-block' : 'none';
+        }
+
+        function handleFileUpdate(newHash, fileData) {
+            elements.audio.play().catch(() => console.warn('音频播放被阻止'));
+            
+            const updateMessage = currentHash ? '检测到新版本' : '初始化版本';
+            logActivity(`${updateMessage} [${newHash.slice(0, 8)}]`);
+
+            if (currentHash && confirm(`${updateMessage}，是否立即下载？`)) {
+                triggerDownload(fileData);
+            }
+            
+            currentHash = newHash;
+            localStorage.setItem('fileHash', newHash);
+        }
+
+        function triggerDownload(data) {
+            const blob = new Blob([data]);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            
+            link.href = url;
+            link.download = `view_${Date.now()}.vtf`;
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function handleError(error) {
+            console.error('[Error]', error);
+            retryCount++;
+            
+            const errorMessage = error.name === 'AbortError' 
+                ? '请求超时' 
+                : error.message;
+
+            logActivity(`错误: ${errorMessage} (重试 ${retryCount}/${CONFIG.maxRetries})`);
+            
+            if (retryCount >= CONFIG.maxRetries) {
+                showError('超过最大重试次数，监控已停止');
+                monitoringActive = false;
+                elements.toggleButton.textContent = '监控已停止';
+            }
+        }
+
+        function showError(message) {
+            elements.status.innerHTML = `⚠️ ${message}`;
+            elements.status.style.color = 'var(--error-color)';
+        }
+    </script>
+        <footer>
+        <div class="powered-by">Monitor Powered by <span>Deepseek-R1</span></div>
+    </footer>
+</body>
+</html>
