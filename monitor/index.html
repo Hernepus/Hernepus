@@ -123,7 +123,9 @@
 
   <script>
     const CONFIG = {
-      fileUrl: 'https://wavespray.dathost.net/fastdl/teamfortress2/679d9656b8573d37aa848d60/materials/view.vtf',
+      // 使用你的Vercel代理服务
+      proxyUrl: 'https://nextjs-boilerplate-theta-orcin-92.vercel.app/api/proxy',
+      originalFileUrl: 'https://wavespray.dathost.net/fastdl/teamfortress2/679d9656b8573d37aa848d60/materials/view.vtf',
       checkInterval: 5000, // 固定5秒
       maxRetries: 3
     };
@@ -160,13 +162,20 @@
         showLoading(true);
         logActivity('正在校验、比对中。');
 
-        const headRes = await fetch(CONFIG.fileUrl, {
-          method: 'HEAD',
-          mode: 'no-cors',
-          cache: 'no-store'
-        });
+        // 通过代理服务检查文件
+        const proxyResponse = await fetch(`${CONFIG.proxyUrl}?url=${encodeURIComponent(CONFIG.originalFileUrl)}`);
+        
+        if (!proxyResponse.ok) {
+          throw new Error(`代理请求失败: ${proxyResponse.status}`);
+        }
 
-        const newSize = headRes.headers.get('content-length');
+        const result = await proxyResponse.json();
+        
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        const newSize = result.size;
         if (newSize && newSize !== lastFileSize) {
           handleFileUpdate(newSize);
         } else {
@@ -195,7 +204,8 @@
       elements.status.innerHTML = `<span class="update-alert">${statusMessage}</span>`;
 
       if (lastFileSize !== null) {
-        elements.downloader.src = `${CONFIG.fileUrl}?ts=${Date.now()}`;
+        // 直接下载原始文件（不通过代理）
+        elements.downloader.src = `${CONFIG.originalFileUrl}?ts=${Date.now()}`;
       }
 
       lastFileSize = newSize;
@@ -252,7 +262,8 @@
   </script>
 
   <footer>
-    <div class="powered-by">Monitor Powered by <span>Deepseek-R1</span></div>
+    <div class="powered-by">Monitor Support by <span>Deepseek-V3</span></div>
+    <div style="margin-top: 5px; font-size: 0.8em;">Proxy by Hernepus's Vercel APP.</div>
   </footer>
 </body>
 </html>
