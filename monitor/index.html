@@ -2,247 +2,114 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VIEW - 监视器</title>
+  <title>VIEW - 自动监控器</title>
   <style>
-    :root {
-      --primary-color: #2c3e50;
-      --success-color: #27ae60;
-      --warning-color: #f1c40f;
-      --error-color: #e74c3c;
-    }
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      max-width: 1000px;
-      margin: 20px auto;
-      padding: 20px;
-      line-height: 1.6;
-    }
-    footer {
-      margin-top: 40px;
-      text-align: center;
-      color: #666;
-      font-size: 0.9em;
-      border-top: 1px solid #eee;
-      padding: 15px 0;
-    }
-    .powered-by {
-      font-family: 'Courier New', monospace;
-      letter-spacing: 1px;
-    }
-    .powered-by span {
-      color: #2c3e50;
-      font-weight: bold;
-    }
-    .controls {
-      display: flex;
-      justify-content: space-between;
-      margin: 20px 0;
-    }
-    .status-container {
-      position: relative;
-      padding: 20px;
-      margin: 20px 0;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      background: #f9f9f9;
-    }
-    .status-badge {
-      position: absolute;
-      top: -12px;
-      right: 20px;
-      background: var(--primary-color);
-      color: white;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.9em;
-    }
-    #historyLog {
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #eee;
-      padding: 10px;
-      margin-top: 15px;
-    }
-    .loading {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(0,0,0,0.1);
-      border-radius: 50%;
-      border-top-color: var(--primary-color);
-      animation: spin 1s ease-in-out infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    button {
-      background: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    button:hover {
-      opacity: 0.9;
-    }
-    .update-alert {
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% { background-color: rgba(46, 204, 113, 0.1); }
-      50% { background-color: rgba(46, 204, 113, 0.3); }
-      100% { background-color: rgba(46, 204, 113, 0.1); }
-    }
-    .debug-info {
-      font-size: 0.8em;
-      color: #666;
-      margin-top: 5px;
-    }
+    :root { --primary-color: #2c3e50; --error-color: #e74c3c; }
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2em auto; padding: 1em; }
+    .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid #eee; border-radius: 50%; border-top: 3px solid var(--primary-color); animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .status-container { border: 1px solid #ccc; padding: 1em; margin-top: 1em; border-radius: 6px; background: #f9f9f9; }
+    .update-alert { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 10px; margin-top: 10px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { background: #e8f5e9; } 50% { background: #c8e6c9; } }
+    .debug-info { font-size: 0.8em; color: #666; margin-top: 10px; display: none; }
   </style>
 </head>
 <body>
   <h1>view.vtf 自动校验器 🔄</h1>
-
   <p style="background: #ecf0f1; padding: 10px; border-left: 4px solid #2ecc71;">
     这个监视器现在会按照 <strong>5秒一次</strong> 的频率检测更新，如果有更新，会立即下载 <code>view.vtf</code> 文件并提示你。
   </p>
 
-  <div class="controls">
-    <div>
-      <button id="toggleButton" onclick="toggleMonitoring()">暂停监控</button>
-      <span id="loadingIndicator" class="loading" style="display: none;"></span>
-      <button id="debugButton" onclick="toggleDebug()" style="margin-left: 10px;">显示调试信息</button>
-    </div>
-  </div>
-
   <div class="status-container">
-    <div class="status-badge">实时状态</div>
-    <div id="status">正在侦测...</div>
-    <div id="debugConsole" class="debug-info" style="display: none;"></div>
+    <div id="status">系统初始化中...</div>
+    <div id="debugConsole" class="debug-info"></div>
     <div id="historyLog"></div>
   </div>
+
+  <button onclick="toggleMonitoring()">暂停/恢复监控</button>
+  <button onclick="toggleDebug()" style="margin-left: 10px;">显示/隐藏调试</button>
+  <span id="loadingIndicator" class="loading" style="display: none;"></span>
 
   <audio id="alertSound" src="https://library.hernepus.com/bye.WAV"></audio>
   <iframe id="hiddenDownloader" style="display:none;"></iframe>
 
   <script>
     const CONFIG = {
-      proxyUrl: 'https://nextjs-boilerplate-theta-orcin-92.vercel.app/api/proxy',
+      proxyUrl: 'https://nextjs-boilerplate-theta-orcin-92.vercel.app/',
       originalFileUrl: 'https://wavespray.dathost.net/fastdl/teamfortress2/679d9656b8573d37aa848d60/materials/view.vtf',
       checkInterval: 5000,
-      maxRetries: 3,
-      requestTimeout: 8000 // 8秒超时
+      requestTimeout: 8000
     };
 
     let monitoringActive = true;
     let retryCount = 0;
     let lastFileSize = localStorage.getItem('lastFileSize') || null;
-    let lastCheckTime = 0;
     let debugMode = false;
 
+    const el = id => document.getElementById(id);
     const elements = {
-      status: document.getElementById('status'),
-      historyLog: document.getElementById('historyLog'),
-      toggleButton: document.getElementById('toggleButton'),
-      loading: document.getElementById('loadingIndicator'),
-      audio: document.getElementById('alertSound'),
-      downloader: document.getElementById('hiddenDownloader'),
-      debugConsole: document.getElementById('debugConsole'),
-      debugButton: document.getElementById('debugButton')
+      status: el('status'),
+      historyLog: el('historyLog'),
+      loading: el('loadingIndicator'),
+      audio: el('alertSound'),
+      downloader: el('hiddenDownloader'),
+      debug: el('debugConsole')
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
-      checkUpdate();
-    });
+    document.addEventListener('DOMContentLoaded', () => checkUpdate());
 
     function toggleDebug() {
       debugMode = !debugMode;
-      elements.debugButton.textContent = debugMode ? '隐藏调试信息' : '显示调试信息';
-      elements.debugConsole.style.display = debugMode ? 'block' : 'none';
-      logDebug('调试模式 ' + (debugMode ? '已开启' : '已关闭'));
+      elements.debug.style.display = debugMode ? 'block' : 'none';
     }
 
-    function logDebug(message) {
+    function toggleMonitoring() {
+      monitoringActive = !monitoringActive;
+      log(`监控已${monitoringActive ? '恢复' : '暂停'}`);
+      if (monitoringActive) checkUpdate();
+    }
+
+    function log(msg) {
+      const div = document.createElement('div');
+      div.textContent = `${new Date().toLocaleTimeString()} - ${msg}`;
+      elements.historyLog.prepend(div);
+    }
+
+    function debug(msg) {
       if (!debugMode) return;
-      const entry = document.createElement('div');
-      entry.textContent = `[DEBUG] ${new Date().toLocaleString()} - ${message}`;
-      elements.debugConsole.prepend(entry);
+      const div = document.createElement('div');
+      div.textContent = `[DEBUG] ${new Date().toLocaleTimeString()} - ${msg}`;
+      elements.debug.prepend(div);
     }
 
-    async function fetchWithTimeout(url, options = {}, timeout = CONFIG.requestTimeout) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
-      try {
-        const response = await fetch(url, {
-          ...options,
-          signal: controller.signal,
-          cache: 'no-store', // 强制绕过缓存
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
-        clearTimeout(timeoutId);
-        return response;
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
+    function showLoading(show) {
+      elements.loading.style.display = show ? 'inline-block' : 'none';
     }
 
     async function checkUpdate() {
       if (!monitoringActive) return;
 
-      const now = Date.now();
-      if (now - lastCheckTime < 3000) {
-        setTimeout(checkUpdate, CONFIG.checkInterval);
-        return;
-      }
-      lastCheckTime = now;
-
+      showLoading(true);
       try {
-        showLoading(true);
-        logActivity('正在校验、比对中。');
-        logDebug(`发起代理请求: ${CONFIG.proxyUrl}?url=${encodeURIComponent(CONFIG.originalFileUrl)}&_=${Date.now()}`);
+        const proxyURL = `${CONFIG.proxyUrl}?url=${encodeURIComponent(CONFIG.originalFileUrl)}&_=${Date.now()}`;
+        debug(`请求: ${proxyURL}`);
 
-        // 添加随机参数绕过CDN缓存
-        const proxyResponse = await fetchWithTimeout(
-          `${CONFIG.proxyUrl}?url=${encodeURIComponent(CONFIG.originalFileUrl)}&_=${Date.now()}`
-        );
-        
-        logDebug(`代理响应状态: ${proxyResponse.status}`);
-        
-        if (!proxyResponse.ok) {
-          throw new Error(`代理请求失败: ${proxyResponse.status}`);
-        }
+        const response = await fetch(proxyURL);
+        const result = await response.json();
+        debug(`响应: ${JSON.stringify(result)}`);
 
-        const result = await proxyResponse.json();
-        logDebug('代理返回数据:', JSON.stringify(result, null, 2));
-        
-        if (result.error) {
-          throw new Error(result.error);
+        if (!response.ok || result.error) {
+          throw new Error(result.error || '代理响应失败');
         }
 
         const newSize = result.size;
-        if (newSize) {
-          logDebug(`获取到文件大小: ${newSize} bytes`);
-          if (newSize !== lastFileSize) {
-            handleFileUpdate(newSize);
-          } else {
-            logActivity('没有检测到文件变化');
-          }
+        if (newSize && newSize !== lastFileSize) {
+          handleFileUpdate(newSize);
         } else {
-          logDebug('警告: 返回的size为null/undefined');
-          throw new Error('无效的文件大小响应');
+          log('文件无变化');
         }
-
-        retryCount = 0;
-      } catch (error) {
-        handleError(error);
+      } catch (err) {
+        log(`错误: ${err.message}`);
       } finally {
         showLoading(false);
         if (monitoringActive) {
@@ -252,88 +119,22 @@
     }
 
     function handleFileUpdate(newSize) {
-      elements.audio.play().catch(e => console.log('音频播放失败:', e));
-
-      const statusMessage = lastFileSize
-        ? `检测到新版本 (大小变化: ${formatBytes(lastFileSize)} → ${formatBytes(newSize)})`
-        : `初始化文件版本 (${formatBytes(newSize)})`;
-
-      logActivity(statusMessage);
-      logDebug(`文件更新处理: ${statusMessage}`);
-      elements.status.innerHTML = `<span class="update-alert">${statusMessage}</span>`;
+      elements.audio.play().catch(() => {});
+      const msg = lastFileSize
+        ? `检测到新版本 (大小变化: ${lastFileSize} → ${newSize})`
+        : `初始化文件版本为 ${newSize}`;
+      log(msg);
+      elements.status.innerHTML = `<div class="update-alert">${msg}</div>`;
 
       if (lastFileSize !== null) {
-        // 直接下载原始文件（不通过代理），添加随机参数避免缓存
-        const downloadUrl = `${CONFIG.originalFileUrl}?ts=${Date.now()}`;
-        elements.downloader.src = downloadUrl;
-        logDebug(`触发文件下载: ${downloadUrl}`);
+        const url = `${CONFIG.originalFileUrl}?ts=${Date.now()}`;
+        elements.downloader.src = url;
+        debug(`下载触发: ${url}`);
       }
 
       lastFileSize = newSize;
       localStorage.setItem('lastFileSize', newSize);
     }
-
-    function formatBytes(bytes) {
-      bytes = parseInt(bytes);
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    function handleError(error) {
-      console.error('[监控错误]', error);
-      logDebug(`处理错误: ${error.message}`);
-      retryCount++;
-
-      let errorMessage;
-      if (error.name === 'AbortError') {
-        errorMessage = '请求超时';
-      } else if (error.message.includes('Failed to fetch')) {
-        errorMessage = '网络请求失败';
-      } else {
-        errorMessage = error.message.split(':')[0];
-      }
-
-      logActivity(`错误: ${errorMessage} (重试 ${retryCount}/${CONFIG.maxRetries})`);
-
-      if (retryCount >= CONFIG.maxRetries) {
-        showError('超过最大重试次数，监控已暂停');
-        monitoringActive = false;
-        elements.toggleButton.textContent = '监控已停止';
-      }
-    }
-
-    function toggleMonitoring() {
-      monitoringActive = !monitoringActive;
-      elements.toggleButton.textContent = monitoringActive ? '暂停监控' : '恢复监控';
-      logActivity(`监控已${monitoringActive ? '恢复' : '暂停'}`);
-      logDebug(`监控状态变更为: ${monitoringActive ? '活跃' : '暂停'}`);
-      if (monitoringActive) checkUpdate();
-    }
-
-    function logActivity(message) {
-      const entry = document.createElement('div');
-      entry.textContent = `${new Date().toLocaleString()} - ${message}`;
-      elements.historyLog.prepend(entry);
-    }
-
-    function showLoading(show) {
-      elements.loading.style.display = show ? 'inline-block' : 'none';
-      logDebug(`加载指示器: ${show ? '显示' : '隐藏'}`);
-    }
-
-    function showError(message) {
-      elements.status.innerHTML = `⚠️ ${message}`;
-      elements.status.style.color = 'var(--error-color)';
-      logDebug(`显示错误: ${message}`);
-    }
   </script>
-
-  <footer>
-    <div class="powered-by">Version<span>PRI-0.1.</span></div>
-    <div style="margin-top: 5px; font-size: 0.8em;">Proxy By Hernepus's Vercel APP.</div>
-  </footer>
 </body>
 </html>
