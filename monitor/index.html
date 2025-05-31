@@ -3,39 +3,146 @@
 <head>
   <meta charset="UTF-8">
   <title>VIEW - 自动监控器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    :root { --primary-color: #2c3e50; --error-color: #e74c3c; }
-    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2em auto; padding: 1em; }
-    .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid #eee; border-radius: 50%; border-top: 3px solid var(--primary-color); animation: spin 1s linear infinite; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    .status-container { border: 1px solid #ccc; padding: 1em; margin-top: 1em; border-radius: 6px; background: #f9f9f9; }
-    .update-alert { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 10px; margin-top: 10px; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%, 100% { background: #e8f5e9; } 50% { background: #c8e6c9; } }
-    .debug-info { font-size: 0.8em; color: #666; margin-top: 10px; display: none; }
+    :root {
+      --primary-color: #2c3e50;
+      --success-color: #27ae60;
+      --warning-color: #f1c40f;
+      --error-color: #e74c3c;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+    }
+
+    .status-container {
+      position: relative;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: #f9f9f9;
+    }
+
+    .status-badge {
+      position: absolute;
+      top: -12px;
+      right: 20px;
+      background: var(--primary-color);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.9em;
+    }
+
+    #historyLog {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      padding: 10px;
+      margin-top: 15px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0,0,0,0.1);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    button {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .update-alert {
+      background: rgba(46, 204, 113, 0.1);
+      border-left: 4px solid #2ecc71;
+      padding: 10px;
+      margin-top: 10px;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { background-color: rgba(46, 204, 113, 0.1); }
+      50% { background-color: rgba(46, 204, 113, 0.3); }
+      100% { background-color: rgba(46, 204, 113, 0.1); }
+    }
+
+    .debug-info {
+      font-size: 0.85em;
+      color: #666;
+      margin-top: 8px;
+      display: none;
+    }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #666;
+      font-size: 0.9em;
+      border-top: 1px solid #eee;
+      padding: 15px 0;
+    }
+
+    .powered-by span {
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <h1>view.vtf 自动校验器 🔄</h1>
+
   <p style="background: #ecf0f1; padding: 10px; border-left: 4px solid #2ecc71;">
     这个监视器现在会按照 <strong>5秒一次</strong> 的频率检测更新，如果有更新，会立即下载 <code>view.vtf</code> 文件并提示你。
   </p>
 
+  <div class="controls">
+    <button onclick="toggleMonitoring()">暂停/恢复监控</button>
+    <button onclick="toggleDebug()">显示/隐藏调试信息</button>
+    <span id="loadingIndicator" class="loading" style="display: none;"></span>
+  </div>
+
   <div class="status-container">
+    <div class="status-badge">实时状态</div>
     <div id="status">系统初始化中...</div>
     <div id="debugConsole" class="debug-info"></div>
     <div id="historyLog"></div>
   </div>
-
-  <button onclick="toggleMonitoring()">暂停/恢复监控</button>
-  <button onclick="toggleDebug()" style="margin-left: 10px;">显示/隐藏调试</button>
-  <span id="loadingIndicator" class="loading" style="display: none;"></span>
 
   <audio id="alertSound" src="https://library.hernepus.com/bye.WAV"></audio>
   <iframe id="hiddenDownloader" style="display:none;"></iframe>
 
   <script>
     const CONFIG = {
-      proxyUrl: 'https://nextjs-boilerplate-theta-orcin-92.vercel.app/',
+      proxyUrl: 'https://your-vercel-app.vercel.app/api/proxy', // ← 替换成你部署的代理地址
       originalFileUrl: 'https://wavespray.dathost.net/fastdl/teamfortress2/679d9656b8573d37aa848d60/materials/view.vtf',
       checkInterval: 5000,
       requestTimeout: 8000
@@ -61,6 +168,7 @@
     function toggleDebug() {
       debugMode = !debugMode;
       elements.debug.style.display = debugMode ? 'block' : 'none';
+      debug(`[调试模式] ${debugMode ? '已启用' : '已关闭'}`);
     }
 
     function toggleMonitoring() {
@@ -93,10 +201,15 @@
       try {
         const proxyURL = `${CONFIG.proxyUrl}?url=${encodeURIComponent(CONFIG.originalFileUrl)}&_=${Date.now()}`;
         debug(`请求: ${proxyURL}`);
-
         const response = await fetch(proxyURL);
-        const result = await response.json();
-        debug(`响应: ${JSON.stringify(result)}`);
+        const text = await response.text();
+
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (err) {
+          throw new Error(`返回内容不是 JSON: ${text.slice(0, 100)}...`);
+        }
 
         if (!response.ok || result.error) {
           throw new Error(result.error || '代理响应失败');
@@ -108,8 +221,16 @@
         } else {
           log('文件无变化');
         }
+
+        retryCount = 0;
       } catch (err) {
-        log(`错误: ${err.message}`);
+        retryCount++;
+        log(`错误: ${err.message} (重试 ${retryCount}/3)`);
+        if (retryCount >= 3) {
+          monitoringActive = false;
+          elements.status.innerHTML = `⚠️ 超过最大重试次数，监控已停止`;
+          elements.status.style.color = 'var(--error-color)';
+        }
       } finally {
         showLoading(false);
         if (monitoringActive) {
@@ -121,20 +242,28 @@
     function handleFileUpdate(newSize) {
       elements.audio.play().catch(() => {});
       const msg = lastFileSize
-        ? `检测到新版本 (大小变化: ${lastFileSize} → ${newSize})`
-        : `初始化文件版本为 ${newSize}`;
+        ? `检测到新版本 (大小变化: ${formatBytes(lastFileSize)} → ${formatBytes(newSize)})`
+        : `初始化文件版本为 ${formatBytes(newSize)}`;
       log(msg);
       elements.status.innerHTML = `<div class="update-alert">${msg}</div>`;
-
-      if (lastFileSize !== null) {
-        const url = `${CONFIG.originalFileUrl}?ts=${Date.now()}`;
-        elements.downloader.src = url;
-        debug(`下载触发: ${url}`);
-      }
-
+      const url = `${CONFIG.originalFileUrl}?ts=${Date.now()}`;
+      elements.downloader.src = url;
+      debug(`触发下载: ${url}`);
       lastFileSize = newSize;
       localStorage.setItem('lastFileSize', newSize);
     }
+
+    function formatBytes(bytes) {
+      bytes = parseInt(bytes);
+      if (isNaN(bytes)) return '未知大小';
+      const units = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
+    }
   </script>
+
+  <footer>
+    <div class="powered-by">Monitor Powered by <span>Deepseek-R1</span></div>
+  </footer>
 </body>
 </html>
