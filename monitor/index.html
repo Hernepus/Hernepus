@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>VIEW - 自动监控器</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIEW - 监视器</title>
   <style>
     :root {
       --primary-color: #2c3e50;
@@ -11,7 +11,6 @@
       --warning-color: #f1c40f;
       --error-color: #e74c3c;
     }
-
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
       max-width: 1000px;
@@ -19,13 +18,27 @@
       padding: 20px;
       line-height: 1.6;
     }
-
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #666;
+      font-size: 0.9em;
+      border-top: 1px solid #eee;
+      padding: 15px 0;
+    }
+    .powered-by {
+      font-family: 'Courier New', monospace;
+      letter-spacing: 1px;
+    }
+    .powered-by span {
+      color: #2c3e50;
+      font-weight: bold;
+    }
     .controls {
       display: flex;
       justify-content: space-between;
       margin: 20px 0;
     }
-
     .status-container {
       position: relative;
       padding: 20px;
@@ -34,7 +47,6 @@
       border: 1px solid #ddd;
       background: #f9f9f9;
     }
-
     .status-badge {
       position: absolute;
       top: -12px;
@@ -45,7 +57,6 @@
       border-radius: 20px;
       font-size: 0.9em;
     }
-
     #historyLog {
       max-height: 300px;
       overflow-y: auto;
@@ -53,7 +64,6 @@
       padding: 10px;
       margin-top: 15px;
     }
-
     .loading {
       display: inline-block;
       width: 20px;
@@ -61,13 +71,11 @@
       border: 3px solid rgba(0,0,0,0.1);
       border-radius: 50%;
       border-top-color: var(--primary-color);
-      animation: spin 1s linear infinite;
+      animation: spin 1s ease-in-out infinite;
     }
-
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-
     button {
       background: var(--primary-color);
       color: white;
@@ -77,43 +85,16 @@
       cursor: pointer;
       transition: opacity 0.2s;
     }
-
     button:hover {
       opacity: 0.9;
     }
-
     .update-alert {
-      background: rgba(46, 204, 113, 0.1);
-      border-left: 4px solid #2ecc71;
-      padding: 10px;
-      margin-top: 10px;
       animation: pulse 1.5s infinite;
     }
-
     @keyframes pulse {
       0% { background-color: rgba(46, 204, 113, 0.1); }
       50% { background-color: rgba(46, 204, 113, 0.3); }
       100% { background-color: rgba(46, 204, 113, 0.1); }
-    }
-
-    .debug-info {
-      font-size: 0.85em;
-      color: #666;
-      margin-top: 8px;
-      display: none;
-    }
-
-    footer {
-      margin-top: 40px;
-      text-align: center;
-      color: #666;
-      font-size: 0.9em;
-      border-top: 1px solid #eee;
-      padding: 15px 0;
-    }
-
-    .powered-by span {
-      font-weight: bold;
     }
   </style>
 </head>
@@ -125,15 +106,15 @@
   </p>
 
   <div class="controls">
-    <button onclick="toggleMonitoring()">暂停/恢复监控</button>
-    <button onclick="toggleDebug()">显示/隐藏调试信息</button>
-    <span id="loadingIndicator" class="loading" style="display: none;"></span>
+    <div>
+      <button id="toggleButton" onclick="toggleMonitoring()">暂停监控</button>
+      <span id="loadingIndicator" class="loading" style="display: none;"></span>
+    </div>
   </div>
 
   <div class="status-container">
     <div class="status-badge">实时状态</div>
-    <div id="status">系统初始化中...</div>
-    <div id="debugConsole" class="debug-info"></div>
+    <div id="status">正在侦测...</div>
     <div id="historyLog"></div>
   </div>
 
@@ -142,95 +123,68 @@
 
   <script>
     const CONFIG = {
-      proxyUrl: 'https://nextjs-boilerplate-theta-orcin-92.vercel.app/', // ← 替换成你部署的代理地址
+      // 使用你的Vercel代理服务
+      proxyUrl: 'https://nextjs-boilerplate-theta-orcin-92.vercel.app/api/proxy',
       originalFileUrl: 'https://wavespray.dathost.net/fastdl/teamfortress2/679d9656b8573d37aa848d60/materials/view.vtf',
-      checkInterval: 5000,
-      requestTimeout: 8000
+      checkInterval: 5000, // 固定5秒
+      maxRetries: 3
     };
 
     let monitoringActive = true;
     let retryCount = 0;
     let lastFileSize = localStorage.getItem('lastFileSize') || null;
-    let debugMode = false;
+    let lastCheckTime = 0;
 
-    const el = id => document.getElementById(id);
     const elements = {
-      status: el('status'),
-      historyLog: el('historyLog'),
-      loading: el('loadingIndicator'),
-      audio: el('alertSound'),
-      downloader: el('hiddenDownloader'),
-      debug: el('debugConsole')
+      status: document.getElementById('status'),
+      historyLog: document.getElementById('historyLog'),
+      toggleButton: document.getElementById('toggleButton'),
+      loading: document.getElementById('loadingIndicator'),
+      audio: document.getElementById('alertSound'),
+      downloader: document.getElementById('hiddenDownloader')
     };
 
-    document.addEventListener('DOMContentLoaded', () => checkUpdate());
-
-    function toggleDebug() {
-      debugMode = !debugMode;
-      elements.debug.style.display = debugMode ? 'block' : 'none';
-      debug(`[调试模式] ${debugMode ? '已启用' : '已关闭'}`);
-    }
-
-    function toggleMonitoring() {
-      monitoringActive = !monitoringActive;
-      log(`监控已${monitoringActive ? '恢复' : '暂停'}`);
-      if (monitoringActive) checkUpdate();
-    }
-
-    function log(msg) {
-      const div = document.createElement('div');
-      div.textContent = `${new Date().toLocaleTimeString()} - ${msg}`;
-      elements.historyLog.prepend(div);
-    }
-
-    function debug(msg) {
-      if (!debugMode) return;
-      const div = document.createElement('div');
-      div.textContent = `[DEBUG] ${new Date().toLocaleTimeString()} - ${msg}`;
-      elements.debug.prepend(div);
-    }
-
-    function showLoading(show) {
-      elements.loading.style.display = show ? 'inline-block' : 'none';
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      checkUpdate();
+    });
 
     async function checkUpdate() {
       if (!monitoringActive) return;
 
-      showLoading(true);
-      try {
-        const proxyURL = `${CONFIG.proxyUrl}?url=${encodeURIComponent(CONFIG.originalFileUrl)}&_=${Date.now()}`;
-        debug(`请求: ${proxyURL}`);
-        const response = await fetch(proxyURL);
-        const text = await response.text();
+      const now = Date.now();
+      if (now - lastCheckTime < 3000) {
+        setTimeout(checkUpdate, CONFIG.checkInterval);
+        return;
+      }
+      lastCheckTime = now;
 
-        let result;
-        try {
-          result = JSON.parse(text);
-        } catch (err) {
-          throw new Error(`返回内容不是 JSON: ${text.slice(0, 100)}...`);
+      try {
+        showLoading(true);
+        logActivity('正在校验、比对中。');
+
+        // 通过代理服务检查文件
+        const proxyResponse = await fetch(`${CONFIG.proxyUrl}?url=${encodeURIComponent(CONFIG.originalFileUrl)}`);
+        
+        if (!proxyResponse.ok) {
+          throw new Error(`代理请求失败: ${proxyResponse.status}`);
         }
 
-        if (!response.ok || result.error) {
-          throw new Error(result.error || '代理响应失败');
+        const result = await proxyResponse.json();
+        
+        if (result.error) {
+          throw new Error(result.error);
         }
 
         const newSize = result.size;
         if (newSize && newSize !== lastFileSize) {
           handleFileUpdate(newSize);
         } else {
-          log('文件无变化');
+          logActivity('没有检测到文件变化');
         }
 
         retryCount = 0;
-      } catch (err) {
-        retryCount++;
-        log(`错误: ${err.message} (重试 ${retryCount}/3)`);
-        if (retryCount >= 3) {
-          monitoringActive = false;
-          elements.status.innerHTML = `⚠️ 超过最大重试次数，监控已停止`;
-          elements.status.style.color = 'var(--error-color)';
-        }
+      } catch (error) {
+        handleError(error);
       } finally {
         showLoading(false);
         if (monitoringActive) {
@@ -240,30 +194,76 @@
     }
 
     function handleFileUpdate(newSize) {
-      elements.audio.play().catch(() => {});
-      const msg = lastFileSize
+      elements.audio.play().catch(e => console.log('音频播放失败:', e));
+
+      const statusMessage = lastFileSize
         ? `检测到新版本 (大小变化: ${formatBytes(lastFileSize)} → ${formatBytes(newSize)})`
-        : `初始化文件版本为 ${formatBytes(newSize)}`;
-      log(msg);
-      elements.status.innerHTML = `<div class="update-alert">${msg}</div>`;
-      const url = `${CONFIG.originalFileUrl}?ts=${Date.now()}`;
-      elements.downloader.src = url;
-      debug(`触发下载: ${url}`);
+        : `初始化文件版本 (${formatBytes(newSize)})`;
+
+      logActivity(statusMessage);
+      elements.status.innerHTML = `<span class="update-alert">${statusMessage}</span>`;
+
+      if (lastFileSize !== null) {
+        // 直接下载原始文件（不通过代理）
+        elements.downloader.src = `${CONFIG.originalFileUrl}?ts=${Date.now()}`;
+      }
+
       lastFileSize = newSize;
       localStorage.setItem('lastFileSize', newSize);
     }
 
     function formatBytes(bytes) {
       bytes = parseInt(bytes);
-      if (isNaN(bytes)) return '未知大小';
-      const units = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(1024));
-      return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function handleError(error) {
+      console.error('[监控错误]', error);
+      retryCount++;
+
+      const errorMessage = error.message.includes('Failed to fetch')
+        ? '网络请求失败'
+        : error.message.split(':')[0];
+
+      logActivity(`错误: ${errorMessage} (重试 ${retryCount}/${CONFIG.maxRetries})`);
+
+      if (retryCount >= CONFIG.maxRetries) {
+        showError('超过最大重试次数，监控已暂停');
+        monitoringActive = false;
+        elements.toggleButton.textContent = '监控已停止';
+      }
+    }
+
+    function toggleMonitoring() {
+      monitoringActive = !monitoringActive;
+      elements.toggleButton.textContent = monitoringActive ? '暂停监控' : '恢复监控';
+      logActivity(`监控已${monitoringActive ? '恢复' : '暂停'}`);
+      if (monitoringActive) checkUpdate();
+    }
+
+    function logActivity(message) {
+      const entry = document.createElement('div');
+      entry.textContent = `${new Date().toLocaleString()} - ${message}`;
+      elements.historyLog.prepend(entry);
+    }
+
+    function showLoading(show) {
+      elements.loading.style.display = show ? 'inline-block' : 'none';
+    }
+
+    function showError(message) {
+      elements.status.innerHTML = `⚠️ ${message}`;
+      elements.status.style.color = 'var(--error-color)';
     }
   </script>
 
   <footer>
-    <div class="powered-by">Monitor Powered by <span>Deepseek-R1</span></div>
+    <div class="powered-by">Version - <span>PRI 0.1</span></div>
+    <div style="margin-top: 5px; font-size: 0.8em;">Proxy By Hernepus' VERCEL APP.</div>
   </footer>
 </body>
 </html>
