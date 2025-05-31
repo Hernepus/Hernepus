@@ -148,79 +148,89 @@
       checkUpdate();
     });
 
-    async function checkUpdate() {
-      if (!monitoringActive) return;
+async function checkUpdate() {
+  if (!monitoringActive) return;
 
-      const now = Date.now();
-      if (now - lastCheckTime < 3000) {
-        setTimeout(checkUpdate, CONFIG.checkInterval);
-        return;
-      }
-      lastCheckTime = now;
+  const now = Date.now();
+  if (now - lastCheckTime < 3000) {
+    setTimeout(checkUpdate, CONFIG.checkInterval);
+    return;
+  }
+  lastCheckTime = now;
 
-      try {
-        showLoading(true);
-        logActivity('正在校验、比对中。');
+  try {
+    showLoading(true);
+    logActivity('正在校验、比对中。');
 
-        // 通过代理服务检查文件
-        const proxyResponse = await fetch(`${CONFIG.proxyUrl}?url=${encodeURIComponent(CONFIG.originalFileUrl)}`);
-        
-        if (!proxyResponse.ok) {
-          throw new Error(`代理请求失败: ${proxyResponse.status}`);
-        }
-
-        const result = await proxyResponse.json();
-        
-        if (result.error) {
-          throw new Error(result.error);
-        }
-
-        const newSize = result.size;
-        if (newSize && newSize !== lastFileSize) {
-          handleFileUpdate(newSize);
-        } else {
-          logActivity('没有检测到文件变化');
-        }
-
-        retryCount = 0;
-      } catch (error) {
-        handleError(error);
-      } finally {
-        showLoading(false);
-        if (monitoringActive) {
-          setTimeout(checkUpdate, CONFIG.checkInterval);
-        }
-      }
+    // 添加时间戳参数避免缓存
+    const proxyResponse = await fetch(
+      `${CONFIG.proxyUrl}?url=${encodeURIComponent(CONFIG.originalFileUrl)}&_=${Date.now()}`
+    );
+    
+    console.log('代理响应:', proxyResponse); // 调试输出
+    
+    if (!proxyResponse.ok) {
+      throw new Error(`代理请求失败: ${proxyResponse.status}`);
     }
 
-    function handleFileUpdate(newSize) {
-      elements.audio.play().catch(e => console.log('音频播放失败:', e));
+    const result = await proxyResponse.json();
+    console.log('代理返回数据:', result); // 调试输出
+    
+    if (result.error) {
+      throw new Error(result.error);
+    }
 
-      const statusMessage = lastFileSize
-        ? `检测到新版本 (大小变化: ${formatBytes(lastFileSize)} → ${formatBytes(newSize)})`
-        : `初始化文件版本 (${formatBytes(newSize)})`;
-
-      logActivity(statusMessage);
-      elements.status.innerHTML = `<span class="update-alert">${statusMessage}</span>`;
-
-      if (lastFileSize !== null) {
-        // 直接下载原始文件（不通过代理）
-        elements.downloader.src = `${CONFIG.originalFileUrl}?ts=${Date.now()}`;
+    const newSize = result.size;
+    console.log('获取到文件大小:', newSize); // 调试输出
+    
+    if (newSize) {
+      // 转换为字符串比较，避免类型问题
+      if (String(newSize) !== String(lastFileSize)) {
+        handleFileUpdate(newSize);
+      } else {
+        logActivity('没有检测到文件变化');
       }
-
-      lastFileSize = newSize;
-      localStorage.setItem('lastFileSize', newSize);
+    } else {
+      console.warn('警告: 返回的size为空', result);
+      logActivity('未能获取文件大小信息');
     }
 
-    function formatBytes(bytes) {
-      bytes = parseInt(bytes);
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    retryCount = 0;
+  } catch (error) {
+    console.error('完整错误详情:', error);
+    handleError(error);
+  } finally {
+    showLoading(false);
+    if (monitoringActive) {
+      setTimeout(checkUpdate, CONFIG.checkInterval);
     }
+  }
+}
 
+   function handleFileUpdate(newSize) {
+  // 确保newSize是字符串
+  newSize = String(newSize);
+  
+  elements.audio.play().catch(e => console.log('音频播放失败:', e));
+
+  const statusMessage = lastFileSize
+    ? `检测到新版本 (大小变化: ${formatBytes(lastFileSize)} → ${formatBytes(newSize)})`
+    : `初始化文件版本 (${formatBytes(newSize)})`;
+
+  console.log('文件更新:', statusMessage); // 调试输出
+  logActivity(statusMessage);
+  elements.status.innerHTML = `<span class="update-alert">${statusMessage}</span>`;
+
+  if (lastFileSize !== null) {
+    // 直接下载原始文件（不通过代理）
+    elements.downloader.src = `${CONFIG.originalFileUrl}?ts=${Date.now()}`;
+    console.log('触发文件下载:', elements.downloader.src); // 调试输出
+  }
+
+  lastFileSize = newSize;
+  // 确保存储的是字符串
+  localStorage.setItem('lastFileSize', newSize);
+}
     function handleError(error) {
       console.error('[监控错误]', error);
       retryCount++;
