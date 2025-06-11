@@ -122,7 +122,7 @@
   <div class="container">
     <div id="output" class="typewriter"></div>
   </div>
-  <script>
+ <script>
     const text = `...How could this happen...?`;
 
     const output = document.getElementById('output');
@@ -141,22 +141,29 @@
       nav.classList.toggle('active');
     });
 
-    // New title blinking effect
+    // New title blinking effect with rare message
     const titleMessages = [
       "No, something went wrong.",
-      "This is too abnormal, check it later.",
-      "It never reached, didn't it?"
+      "This is incredibly abnormal, check it later.",
+      "It never reached, didn't it?",
+     "What do you really intend to do?",
+     "There's not a valid reason for it.",
     ];
+    const rareMessage = "...PLEASE SUICIDE RIGHT NOW.";
     let currentTitleIndex = 0;
     
     function blinkTitle() {
-      document.title = titleMessages[currentTitleIndex];
-      currentTitleIndex = (currentTitleIndex + 1) % titleMessages.length;
+      // 5% chance to show the rare message
+      if (Math.random() < 0.05) {
+        document.title = rareMessage;
+      } else {
+        document.title = titleMessages[currentTitleIndex];
+        currentTitleIndex = (currentTitleIndex + 1) % titleMessages.length;
+      }
     }
     
     // Start blinking with 0.2s interval
     setInterval(blinkTitle, 200);
-  </script>
-
+</script>
 </body>
 </html>
