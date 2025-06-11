@@ -4,7 +4,7 @@
  <link rel="shortcut icon" href="/favicon.ico">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome - Limbo</title>
+  <title>??????</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
   <style>
@@ -118,23 +118,6 @@
     <a href="projects">PROJECTS</a>
     <a href="about_me">ABOUT ME</a>
   </nav>
-  <div class="social-links">
-    
-    <a href="tencent://message/?uin=738960581" 
-       style="color: #00B4FF; font-size: 12px; margin: 0 10px; text-decoration: none; border-bottom: 1px dashed #00B4FF; position: fixed; bottom: 150px; right:1060px">QQ</a>
-    
-    <a href="https://space.bilibili.com/3494363617299270"
-     style="
-     position: fixed;    
-     bottom: 150px;        
-     right: 800px;
-     color: #FB7299;
-     font-size: 12px;
-     margin: 0 10px;
-     text-decoration: none;
-     border-bottom: 1px dashed currentColor;"
-     >BiliBili</a>
-   </div>
   <!-- 内容区 -->
   <div class="container">
     <div id="output" class="typewriter"></div>
@@ -152,11 +135,27 @@
       output.appendChild(span);
     });
     const hamburger = document.querySelector('.hamburger');
-const nav = document.querySelector('nav');
+    const nav = document.querySelector('nav');
 
-hamburger.addEventListener('click', () => {
-  nav.classList.toggle('active');
-});
+    hamburger.addEventListener('click', () => {
+      nav.classList.toggle('active');
+    });
+
+    // New title blinking effect
+    const titleMessages = [
+      "No, something went wrong.",
+      "This is too abnormal, check it later.",
+      "It never reached, didn't it?"
+    ];
+    let currentTitleIndex = 0;
+    
+    function blinkTitle() {
+      document.title = titleMessages[currentTitleIndex];
+      currentTitleIndex = (currentTitleIndex + 1) % titleMessages.length;
+    }
+    
+    // Start blinking with 0.2s interval
+    setInterval(blinkTitle, 200);
   </script>
 
 </body>
