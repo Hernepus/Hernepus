@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<link rel="shortcut icon" href="/randevent/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>randEvent - GMOD Lua Function Library</title>
+    <style>
+        /* 基础样式 - 模拟2000年代网页设计 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a2e;
+            color: #ccc;
+            margin: 0;
+            padding: 0;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%231a1a2e"/><path d="M0,0 L100,100 M100,0 L0,100" stroke="%23333" stroke-width="1"/></svg>');
+        }
+        
+        .container {
+            width: 800px;
+            margin: 0 auto;
+            background-color: #16213e;
+            border: 2px solid #0f3460;
+            padding: 10px;
+            box-shadow: 0 0 15px #000;
+        }
+        
+        header {
+            background: linear-gradient(to bottom, #0f3460, #1a1a2e);
+            padding: 10px;
+            text-align: center;
+            border-bottom: 3px solid #e94560;
+        }
+        
+        h1 {
+            color: #e94560;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px #000;
+            margin: 5px 0;
+            font-family: "Trebuchet MS", Arial, sans-serif;
+        }
+        
+        h2 {
+            color: #4cc9f0;
+            border-bottom: 1px dashed #4cc9f0;
+            padding-bottom: 5px;
+            font-family: "Trebuchet MS", Arial, sans-serif;
+        }
+        
+        .nav {
+            background-color: #0f3460;
+            padding: 5px;
+            margin: 10px 0;
+        }
+        
+        .nav a {
+            color: #4cc9f0;
+            text-decoration: none;
+            margin: 0 10px;
+            padding: 3px 8px;
+            border: 1px solid #4cc9f0;
+        }
+        
+        .nav a:hover {
+            background-color: #4cc9f0;
+            color: #0f3460;
+        }
+        
+        .content {
+            padding: 15px;
+            min-height: 400px;
+        }
+        
+        .download-box {
+            background-color: #1a1a2e;
+            border: 2px dashed #e94560;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .download-button {
+            display: inline-block;
+            background-color: #e94560;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 5px;
+            border: 1px solid #fff;
+        }
+        
+        .download-button:hover {
+            background-color: #4cc9f0;
+        }
+        
+        .image-placeholder {
+            width: 200px;
+            height: 150px;
+            background-color: #2a2a4a;
+            border: 1px solid #4cc9f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8a8a8a;
+            margin: 10px;
+        }
+        
+        .notice {
+            color: #4cc9f0;
+            background-color: #1a1a2e;
+            padding: 5px;
+            border-left: 3px solid #4cc9f0;
+            margin: 10px 0;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #0f3460;
+            border-top: 2px solid #4cc9f0;
+            font-size: 12px;
+            color: #8a8a8a;
+        }
+        
+        /* 微妙的异常样式 */
+        .subtle-glitch {
+            position: relative;
+        }
+        
+        .subtle-glitch:hover::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(76, 201, 240, 0.1);
+            pointer-events: none;
+        }
+        
+        /* 模拟表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        th, td {
+            border: 1px solid #4cc9f0;
+            padding: 5px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #0f3460;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #1a1a2e;
+        }
+        
+        /* 隐藏的异常 - 只在特定条件下显示 */
+        .hidden-message {
+            display: none;
+            color: #e94560;
+            font-size: 10px;
+            margin-top: 5px;
+        }
+        
+        .download-button:hover + .hidden-message {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>randEvent</h1>
+            <p>GMOD Lua Function Library - Advanced Event System</p>
+        </header>
+        
+        <div class="nav">
+            <a href="#">Home</a>
+            <a href="#">Documentation</a>
+            <a href="#">Downloads</a>
+            <a href="#">Forums</a>
+            <a href="#">About</a>
+        </div>
+        
+        <div class="content">
+            <h2>About randEvent</h2>
+            <p>randEvent is a powerful Lua function library for Garry's Mod that provides an advanced event system for mod developers. Create dynamic, randomized in-game events with ease!</p>
+            
+            <div class="image-placeholder">
+                [failed to fetch]
+            </div>
+            
+            <div class="notice">
+                Note: This library is currently in active development. Please report any issues to the developer.
+            </div>
+            
+            <h2>Downloads</h2>
+            <p>Available versions of randEvent:</p>
+            
+            <div class="download-box">
+                <h3>Current Versions</h3>
+                <p>Select a version to download:</p>
+                
+                <a href="#" class="download-button">rand-0.29.0b (2013.9.7)</a>
+                <div class="hidden-message">Initial stable release</div>
+                
+                <a href="#" class="download-button">rand-0.51.2b (2014.5.22)</a>
+                <div class="hidden-message">Extended event system</div>
+                
+                <a href="#" class="download-button">rand-1.00.0r (2014.10.31)</a>
+                <div class="hidden-message">Final release - PER-RESET</div>
+            </div>
+            
+            <h2>Features</h2>
+            <ul>
+                <li>Advanced event randomization system</li>
+                <li>Seamless integration with existing GMOD mods</li>
+                <li>Custom event triggers and conditions</li>
+                <li>Real-time event monitoring and logging</li>
+                <li>Extended API for advanced users</li>
+            </ul>
+            
+            <h2>Version History</h2>
+            <table>
+                <tr>
+                    <th>Version</th>
+                    <th>Release Date</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <Td>rand-0.15.4b</td>
+                    <td>Expired</td>
+                    <td>Stable As Expected</td>
+                </tr>
+                <tr>
+                    <td>rand-0.29.0b</td>
+                    <td>2013.9.7</td>
+                    <td>Stable As Expected</td>
+                </tr>
+                <tr>
+                    <td>rand-0.51.2b</td>
+                    <td>2014.5.22</td>
+                    <td>Stable As Expected</td>
+                </tr>
+                <tr>
+                    <td>rand-1.00.0r</td>
+                    <td>2014.10.31</td>
+                    <td>Download</td>
+                </tr>
+            </table>
+            
+            <div class="image-placeholder">
+                [failed to fetch]
+            </div>
+            
+            <h2>Documentation</h2>
+            <p>Complete documentation is available in the download package. Key commands include:</p>
+            <ul>
+                <li><code>rand help</code> - Display available commands</li>
+                <li><code>rand load {name}</code> - Load third-party mods</li>
+                <li><code>rand record {filename}</code> - Record custom events</li>
+                <li><code>rand connect {server}</code> - Connect to randEvent servers</li>
+            </ul>
+            
+            <div class="notice subtle-glitch">
+                For advanced usage, please refer to the developer documentation included with the library.
+            </div>
+        </div>
+        
+        <footer>
+            <p>randEvent &copy; 2010-2014 | Last updated: October 2014</p>
+            <p>This site is best viewed in Internet Explorer 6+ at 1024x768 resolution</p>
+        </footer>
+    </div>
+</body>
+</html>
